@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TeenWork — Работа для подростков</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* ===== ЭКРАН ЗАГРУЗКИ ===== */
+    .splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #7C3AED, #6d28d9, #4c1d95);
+      z-index: 9999;
+      transition: opacity 0.8s ease;
+    }
+    .splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .splash .logo-circle {
+      width: 140px;
+      height: 140px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 70px;
+      color: white;
+      animation: pulse 2s ease-in-out infinite, scaleIn 1s ease-out;
+    }
+
+    @keyframes scaleIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .splash .app-name {
+      margin-top: 24px;
+      font-size: 38px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 2px;
+      animation: fadeIn 1.2s ease-out;
+    }
+
+    .splash .app-subtitle {
+      font-size: 16px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 8px;
+      animation: fadeIn 1.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .dots {
+      margin-top: 40px;
+      display: flex;
+      gap: 12px;
+    }
+    .dots .dot {
+      width: 14px;
+      height: 14px;
+      background: white;
+      border-radius: 50%;
+      animation: dotBounce 1.4s ease-in-out infinite;
+    }
+    .dots .dot:nth-child(1) { animation-delay: 0s; }
+    .dots .dot:nth-child(2) { animation-delay: 0.3s; }
+    .dots .dot:nth-child(3) { animation-delay: 0.6s; }
+
+    @keyframes dotBounce {
+      0%, 100% { transform: scale(0.6); opacity: 0.5; }
+      50% { transform: scale(1); opacity: 1; }
+    }
+
+    #flutter-app {
+      display: none;
+    }
+    #flutter-app.loaded {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== ЭКРАН ЗАГРУЗКИ ===== -->
+  <div class="splash" id="splashScreen">
+    <div class="logo-circle">🧑‍💻</div>
+    <div class="app-name">TeenWork</div>
+    <div class="app-subtitle">Работа для подростков</div>
+    <div class="dots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <!-- ===== КОНТЕЙНЕР ДЛЯ ПРИЛОЖЕНИЯ ===== -->
+  <div id="flutter-app"></div>
+
+  <script>
+    // ============================================================
+    // 1. FIREBASE (ТВОИ ДАННЫЕ)
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-iQlfApMYsg8vOw7Xtkub_6dTDVAjE5Y",
+      authDomain: "teenwork-e02f2.firebaseapp.com",
+      projectId: "teenwork-e02f2",
+      storageBucket: "teenwork-e02f2.firebasestorage.app",
+      messagingSenderId: "975374727761",
+      appId: "1:975374727761:web:f312ddce7f674fc59f5670"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    console.log('✅ Firebase подключен!');
+  </script>
+
+  <!-- ===== ЗАПУСК ПРИЛОЖЕНИЯ ===== -->
+  <script>
+    const splash = document.getElementById('splashScreen');
+    const appEl = document.getElementById('flutter-app');
+
+    window.flutterAppReady = function() {
+      splash.classList.add('hidden');
+      appEl.classList.add('loaded');
+      setTimeout(() => {
+        splash.style.display = 'none';
+      }, 800);
+    };
+
+    setTimeout(() => {
+      if (!appEl.classList.contains('loaded')) {
+        splash.innerHTML = `
+          <div class="logo-circle" style="background:rgba(255,255,255,0.12);">⚠️</div>
+          <div class="app-name" style="font-size:28px;">Загрузка затянулась</div>
+          <div class="app-subtitle">Попробуйте обновить страницу</div>
+          <button onclick="location.reload()" style="margin-top:24px; padding:12px 32px; background:white; color:#7C3AED; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer;">
+            Обновить 🔄
+          </button>
+        `;
+      }
+    }, 25000);
+  </script>
+
+  <!-- ===== ГЛАВНЫЙ СКРИПТ ===== -->
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
+</html>
