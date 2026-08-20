@@ -1,24 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TeenWork — Работа для подростков</title>
   
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
+  
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: #f5f5f5; min-height: 100vh; padding: 16px; padding-bottom: 80px; }
+    
+    .header { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 20px; color: #1a1a2e; }
+    
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; background: white; outline: none; }
+    .search-bar input:focus { border-color: #7C3AED; }
+    .filter-btn { padding: 12px 16px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+    .tab { padding: 8px 20px; border-radius: 20px; border: 1px solid #e0e0e0; background: white; font-size: 14px; cursor: pointer; white-space: nowrap; }
+    .tab.active { background: #7C3AED; color: white; border-color: #7C3AED; }
+    
+    .task-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .task-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .task-category { padding: 4px 10px; background: #f0edff; color: #7C3AED; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .task-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .task-title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
+    .task-price { font-size: 17px; font-weight: 700; color: #10b981; }
+    .task-desc { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
+    .task-meta { display: flex; gap: 16px; font-size: 12px; color: #6b7280; margin-bottom: 12px; flex-wrap: wrap; }
+    .task-actions { display: flex; gap: 8px; }
+    .btn-apply { flex: 1; padding: 10px; background: #7C3AED; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-chat { padding: 10px 14px; background: #f3f4f6; color: #7C3AED; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0 12px; border-top: 1px solid #e5e7eb; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #9ca3af; cursor: pointer; padding: 4px 12px; border: none; background: none; }
+    .nav-item.active { color: #7C3AED; }
+    .nav-item .nav-icon { font-size: 22px; }
+    
+    .fab { position: fixed; bottom: 80px; right: 20px; padding: 14px 20px; background: #7C3AED; color: white; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4); display: flex; align-items: center; gap: 8px; z-index: 100; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 20px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+    .modal input, .modal textarea { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .modal-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .modal-category { padding: 6px 14px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 12px; cursor: pointer; }
+    .modal-category.selected { background: #7C3AED; color: white; border-color: #7C3AED; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .modal-actions .btn-cancel { background: #f3f4f6; color: #374151; }
+    .modal-actions .btn-submit { background: #7C3AED; color: white; }
+    
+    .page { display: none; }
+    .profile-card { background: white; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 16px; }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #7C3AED; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; margin: 0 auto 12px; }
+    .profile-name { font-size: 20px; font-weight: 700; }
+    .profile-rating { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+    .profile-stat { display: flex; align-items: center; gap: 4px; font-size: 14px; color: #6b7280; }
+    
     .splash {
       position: fixed;
       top: 0;
@@ -33,134 +78,342 @@
       z-index: 9999;
       transition: opacity 0.8s ease;
     }
-    .splash.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .splash .logo-circle {
-      width: 140px;
-      height: 140px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 70px;
-      color: white;
-      animation: pulse 2s ease-in-out infinite, scaleIn 1s ease-out;
-    }
-
-    @keyframes scaleIn {
-      0% { transform: scale(0); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-    }
-
-    .splash .app-name {
-      margin-top: 24px;
-      font-size: 38px;
-      font-weight: 700;
-      color: white;
-      letter-spacing: 2px;
-      animation: fadeIn 1.2s ease-out;
-    }
-
-    .splash .app-subtitle {
-      font-size: 16px;
-      color: rgba(255,255,255,0.7);
-      margin-top: 8px;
-      animation: fadeIn 1.5s ease-out;
-    }
-
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(10px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    .dots {
-      margin-top: 40px;
-      display: flex;
-      gap: 12px;
-    }
-    .dots .dot {
-      width: 14px;
-      height: 14px;
-      background: white;
-      border-radius: 50%;
-      animation: dotBounce 1.4s ease-in-out infinite;
-    }
+    .splash.hidden { opacity: 0; pointer-events: none; }
+    .splash .logo-circle { width: 140px; height: 140px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 70px; color: white; animation: pulse 2s ease-in-out infinite, scaleIn 1s ease-out; }
+    @keyframes scaleIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    .splash .app-name { margin-top: 24px; font-size: 38px; font-weight: 700; color: white; letter-spacing: 2px; animation: fadeIn 1.2s ease-out; }
+    .splash .app-subtitle { font-size: 16px; color: rgba(255,255,255,0.7); margin-top: 8px; animation: fadeIn 1.5s ease-out; }
+    @keyframes fadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+    .dots { margin-top: 40px; display: flex; gap: 12px; }
+    .dots .dot { width: 14px; height: 14px; background: white; border-radius: 50%; animation: dotBounce 1.4s ease-in-out infinite; }
     .dots .dot:nth-child(1) { animation-delay: 0s; }
     .dots .dot:nth-child(2) { animation-delay: 0.3s; }
     .dots .dot:nth-child(3) { animation-delay: 0.6s; }
-
-    @keyframes dotBounce {
-      0%, 100% { transform: scale(0.6); opacity: 0.5; }
-      50% { transform: scale(1); opacity: 1; }
-    }
+    @keyframes dotBounce { 0%, 100% { transform: scale(0.6); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } }
+    
+    @media (max-width: 480px) { body { padding: 12px; } }
+    @media (min-width: 768px) { body { max-width: 600px; margin: 0 auto; } }
   </style>
 </head>
 <body>
 
-  <!-- ===== ЭКРАН ЗАГРУЗКИ ===== -->
-  <div class="splash" id="splashScreen">
-    <div class="logo-circle">🧑‍💻</div>
-    <div class="app-name">TeenWork</div>
-    <div class="app-subtitle">Работа для подростков</div>
-    <div class="dots">
-      <div class="dot"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
+<!-- ===== ЭКРАН ЗАГРУЗКИ ===== -->
+<div class="splash" id="splashScreen">
+  <div class="logo-circle">🧑‍💻</div>
+  <div class="app-name">TeenWork</div>
+  <div class="app-subtitle">Работа для подростков</div>
+  <div class="dots">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
+
+<!-- ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== -->
+<div id="app" style="display:none;">
+
+<div class="header">
+  <h1>🧑‍💻 TeenWork</h1>
+  <span style="font-size:24px;">⚡</span>
+</div>
+
+<div class="search-bar">
+  <input id="searchInput" placeholder="Поиск по заданиям..." oninput="filterTasks()">
+  <button class="filter-btn" onclick="openFilterModal()">🔍</button>
+</div>
+
+<div class="tabs" id="tabsContainer">
+  <button class="tab active" data-tab="all" onclick="switchTab('all')">Все</button>
+  <button class="tab" data-tab="recommended" onclick="switchTab('recommended')">Рекомендованные</button>
+</div>
+
+<div id="tasksContainer"></div>
+
+<button class="fab" onclick="openAddModal()">➕ Создать задание</button>
+
+<div class="bottom-nav">
+  <button class="nav-item active" data-nav="home" onclick="switchNav('home')">
+    <span class="nav-icon">🏠</span><span class="nav-label">Главная</span>
+  </button>
+  <button class="nav-item" data-nav="chat" onclick="switchNav('chat')">
+    <span class="nav-icon">💬</span><span class="nav-label">Чаты</span>
+  </button>
+  <button class="nav-item" data-nav="profile" onclick="switchNav('profile')">
+    <span class="nav-icon">👤</span><span class="nav-label">Профиль</span>
+  </button>
+</div>
+
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">➕ Новое задание</div>
+    <input id="taskTitle" placeholder="Название задания *">
+    <input id="taskPrice" placeholder="Цена *" type="number">
+    <textarea id="taskDesc" placeholder="Описание"></textarea>
+    <input id="taskDeadline" placeholder="Срок выполнения">
+    <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Категории:</div>
+    <div class="modal-categories" id="modalCategories"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Отмена</button>
+      <button class="btn-submit" onclick="addTask()">Опубликовать</button>
     </div>
   </div>
+</div>
 
-  <script>
-    // ============================================================
-    // 1. FIREBASE (ТВОИ ДАННЫЕ)
-    // ============================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-iQlfApMYsg8vOw7Xtkub_6dTDVAjE5Y",
-      authDomain: "teenwork-e02f2.firebaseapp.com",
-      projectId: "teenwork-e02f2",
-      storageBucket: "teenwork-e02f2.firebasestorage.app",
-      messagingSenderId: "975374727761",
-      appId: "1:975374727761:web:f312ddce7f674fc59f5670"
-    };
+<div class="modal-overlay" id="filterModal">
+  <div class="modal">
+    <div class="modal-title">🔍 Фильтр</div>
+    <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Выберите категории:</div>
+    <div class="modal-categories" id="filterCategories"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeFilterModal()">Закрыть</button>
+      <button class="btn-submit" onclick="applyFilter()">Применить</button>
+    </div>
+  </div>
+</div>
 
-    firebase.initializeApp(firebaseConfig);
-    console.log('✅ Firebase подключен!');
-  </script>
+<div class="page" id="pageChats">
+  <div class="profile-card">
+    <div style="font-size:48px; margin-bottom:12px;">💬</div>
+    <div style="font-size:18px; font-weight:600;">Здесь будут ваши чаты</div>
+    <div style="color:#6b7280; font-size:14px; margin-top:4px;">Откликнитесь на задание, чтобы начать общение</div>
+  </div>
+</div>
 
-  <!-- ===== ЗАПУСК ПРИЛОЖЕНИЯ ===== -->
-  <script>
-    const splash = document.getElementById('splashScreen');
+<div class="page" id="pageProfile">
+  <div class="profile-card">
+    <div class="profile-avatar">👤</div>
+    <div class="profile-name">Пользователь</div>
+    <div class="profile-rating">
+      <span class="profile-stat">⭐ 0.0</span>
+      <span class="profile-stat">✅ 0 заданий</span>
+    </div>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:8px;">
+    <button style="padding:14px; background:#7C3AED; color:white; border:none; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer;" onclick="alert('📋 Здесь будут ваши отклики')">📋 Мои отклики</button>
+    <button style="padding:14px; background:#6b7280; color:white; border:none; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer;" onclick="alert('💬 Чат с поддержкой')">💬 Поддержка</button>
+  </div>
+</div>
 
-    window.flutterAppReady = function() {
-      splash.classList.add('hidden');
-      setTimeout(() => {
-        splash.style.display = 'none';
-      }, 800);
-    };
+</div>
 
-    setTimeout(() => {
-      if (!splash.classList.contains('hidden')) {
-        splash.innerHTML = `
-          <div class="logo-circle" style="background:rgba(255,255,255,0.12);">⚠️</div>
-          <div class="app-name" style="font-size:28px;">Загрузка затянулась</div>
-          <div class="app-subtitle">Попробуйте обновить страницу</div>
-          <button onclick="location.reload()" style="margin-top:24px; padding:12px 32px; background:white; color:#7C3AED; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer;">
-            Обновить 🔄
-          </button>
-        `;
-      }
-    }, 30000);
-  </script>
+<script>
+// ============================================================
+// 1. FIREBASE
+// ============================================================
 
-  <!-- ===== ОСНОВНОЙ СКРИПТ ===== -->
-  <script src="main.dart.js" type="application/javascript"></script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC-iQlfApMYsg8vOw7Xtkub_6dTDVAjE5Y",
+  authDomain: "teenwork-e02f2.firebaseapp.com",
+  projectId: "teenwork-e02f2",
+  storageBucket: "teenwork-e02f2.firebasestorage.app",
+  messagingSenderId: "975374727761",
+  appId: "1:975374727761:web:f312ddce7f674fc59f5670"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+console.log('✅ Firebase подключен!');
+
+// ============================================================
+// 2. ДАННЫЕ
+// ============================================================
+
+let tasks = [];
+let currentTab = 'all';
+let currentNav = 'home';
+let filterCategories = [];
+
+const allCategories = [
+  'Написание текстов', 'Рерайт статей', 'Придумать слоган', 'Написание отзывов',
+  'Составление списков', 'Транскрибация аудио', 'Расшифровка субтитров',
+  'Дизайн в Canva', 'Оформление обложек', 'Подбор стоковых фото', 'Создание мемов',
+  'Посты для соцсетей', 'Ответы на комментарии', 'Подбор хэштегов',
+  'Помощь с уроками', 'Проверка ДЗ', 'Составление конспектов',
+  'Перевод текстов', 'Проверка перевода'
+];
+
+// ============================================================
+// 3. ЗАГРУЗКА ЗАДАНИЙ ИЗ FIREBASE
+// ============================================================
+
+async function loadTasks() {
+  try {
+    const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
+    tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderTasks();
+    hideSplash();
+  } catch (error) {
+    console.warn('⚠️ Ошибка загрузки из Firebase, используем примеры:', error);
+    tasks = [
+      { id: '1', title: 'Написать пост для Instagram', categories: ['Посты для соцсетей', 'Написание текстов'], price: 300, description: 'Креативный пост про ЗОЖ', deadline: '3 дня', author: 'Анна, 17 лет', rating: 4.8, responses: [] },
+      { id: '2', title: 'Помочь с математикой 7 класс', categories: ['Помощь с уроками', 'Проверка ДЗ'], price: 500, description: 'Объяснить тему "Квадратные уравнения"', deadline: 'Завтра', author: 'Сергей, 15 лет', rating: 4.5, responses: [] },
+      { id: '3', title: 'Сделать дизайн в Canva', categories: ['Дизайн в Canva', 'Оформление обложек'], price: 400, description: 'Обложка для YouTube', deadline: '2 дня', author: 'Олег, 16 лет', rating: 4.9, responses: [] }
+    ];
+    renderTasks();
+    hideSplash();
+  }
+}
+
+function hideSplash() {
+  const splash = document.getElementById('splashScreen');
+  const app = document.getElementById('app');
+  splash.classList.add('hidden');
+  app.style.display = 'block';
+  setTimeout(() => { splash.style.display = 'none'; }, 800);
+}
+
+// ============================================================
+// 4. ОТОБРАЖЕНИЕ
+// ============================================================
+
+function getFilteredTasks() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  let filtered = tasks;
+  if (search) filtered = filtered.filter(t => t.title.toLowerCase().includes(search));
+  if (filterCategories.length) filtered = filtered.filter(t => t.categories.some(c => filterCategories.includes(c)));
+  if (currentTab === 'recommended') {
+    const interests = ['Тексты', 'Дизайн', 'Соцсети', 'Монтаж', 'Учёба', 'Переводы'];
+    filtered = filtered.filter(t => t.categories.some(c => interests.some(i => c.includes(i) || i.includes(c))));
+  }
+  return filtered;
+}
+
+function renderTasks() {
+  const container = document.getElementById('tasksContainer');
+  const filtered = getFilteredTasks();
+  
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center; padding:60px 0;"><div style="font-size:48px;">🔍</div><div style="font-size:18px; font-weight:600;">Нет заданий</div><div style="color:#6b7280;">Создайте первое задание!</div></div>`;
+    return;
+  }
+  
+  container.innerHTML = filtered.map(task => `
+    <div class="task-card">
+      <div class="task-categories">${task.categories.map(c => `<span class="task-category">${c}</span>`).join('')}</div>
+      <div class="task-title-row"><span class="task-title">${task.title}</span><span class="task-price">${task.price} ₽</span></div>
+      <div class="task-desc">${task.description}</div>
+      <div class="task-meta">
+        <span>👤 ${task.author}</span>
+        <span>⭐ ${task.rating}</span>
+        <span>⏱ ${task.deadline}</span>
+        ${task.responses?.length ? `<span>📋 ${task.responses.length}</span>` : ''}
+      </div>
+      <div class="task-actions">
+        <button class="btn-apply" onclick="applyForTask('${task.id}')">Откликнуться</button>
+        <button class="btn-chat" onclick="alert('💬 Чат с ${task.author}')">💬</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// 5. ОТКЛИК
+// ============================================================
+
+function applyForTask(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  if (task.responses?.some(r => r.executor === 'Ты')) {
+    alert('⚠️ Вы уже откликнулись на это задание');
+    return;
+  }
+  if (!task.responses) task.responses = [];
+  task.responses.push({ executor: 'Ты', status: 'pending', createdAt: Date.now() });
+  renderTasks();
+  alert('✅ Отклик отправлен! Ждите ответа от ' + task.author);
+}
+
+// ============================================================
+// 6. СОЗДАНИЕ ЗАДАНИЯ
+// ============================================================
+
+async function addTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  const price = parseInt(document.getElementById('taskPrice').value.trim());
+  const desc = document.getElementById('taskDesc').value.trim();
+  const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
+  const categories = getSelectedCategories('modalCategories');
+  
+  if (!title) { alert('Введите название задания'); return; }
+  if (!price || isNaN(price)) { alert('Введите корректную цену'); return; }
+  if (!categories.length) { alert('Выберите хотя бы одну категорию'); return; }
+  
+  const newTask = { title, categories, price, description: desc || 'Без описания', deadline, author: 'Ты', rating: 5.0, responses: [], createdAt: new Date().toISOString() };
+  
+  try {
+    const docRef = await db.collection('tasks').add({ ...newTask, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    tasks.unshift({ id: docRef.id, ...newTask });
+    renderTasks();
+    closeAddModal();
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskPrice').value = '';
+    document.getElementById('taskDesc').value = '';
+    document.getElementById('taskDeadline').value = '';
+    alert('✅ Задание опубликовано в Firebase!');
+  } catch (error) {
+    alert('❌ Ошибка сохранения в Firebase. Проверьте подключение.');
+    console.error(error);
+  }
+}
+
+// ============================================================
+// 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  renderTasks();
+}
+
+function switchNav(nav) {
+  currentNav = nav;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.nav-item[data-nav="${nav}"]`).classList.add('active');
+  document.getElementById('tasksContainer').style.display = nav === 'home' ? 'block' : 'none';
+  document.getElementById('pageChats').style.display = nav === 'chat' ? 'block' : 'none';
+  document.getElementById('pageProfile').style.display = nav === 'profile' ? 'block' : 'none';
+  if (nav === 'home') renderTasks();
+}
+
+function filterTasks() { renderTasks(); }
+
+function openAddModal() {
+  document.getElementById('addModal').classList.add('show');
+  renderCategoryChips('modalCategories');
+}
+function closeAddModal() { document.getElementById('addModal').classList.remove('show'); }
+
+function openFilterModal() {
+  document.getElementById('filterModal').classList.add('show');
+  renderCategoryChips('filterCategories');
+}
+function closeFilterModal() { document.getElementById('filterModal').classList.remove('show'); }
+
+function renderCategoryChips(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = allCategories.map(c => `<span class="modal-category" onclick="toggleCategory(this)">${c}</span>`).join('');
+}
+
+function toggleCategory(el) { el.classList.toggle('selected'); }
+function getSelectedCategories(containerId) {
+  return Array.from(document.getElementById(containerId).querySelectorAll('.selected')).map(el => el.textContent);
+}
+
+function applyFilter() {
+  filterCategories = getSelectedCategories('filterCategories');
+  closeFilterModal();
+  renderTasks();
+}
+
+// ============================================================
+// 8. ЗАПУСК
+// ============================================================
+
+loadTasks();
+</script>
 </body>
 </html>
