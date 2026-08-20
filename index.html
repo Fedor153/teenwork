@@ -5,65 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TeenWork — Работа для подростков</title>
   
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { background: #f5f5f5; min-height: 100vh; padding: 16px; padding-bottom: 80px; }
     
-    .header { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; }
-    .header h1 { font-size: 20px; color: #1a1a2e; }
-    
-    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-    .search-bar input { flex: 1; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; background: white; outline: none; }
-    .search-bar input:focus { border-color: #7C3AED; }
-    .filter-btn { padding: 12px 16px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; }
-    
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
-    .tab { padding: 8px 20px; border-radius: 20px; border: 1px solid #e0e0e0; background: white; font-size: 14px; cursor: pointer; white-space: nowrap; }
-    .tab.active { background: #7C3AED; color: white; border-color: #7C3AED; }
-    
-    .task-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .task-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-    .task-category { padding: 4px 10px; background: #f0edff; color: #7C3AED; border-radius: 12px; font-size: 11px; font-weight: 600; }
-    .task-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .task-title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
-    .task-price { font-size: 17px; font-weight: 700; color: #10b981; }
-    .task-desc { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
-    .task-meta { display: flex; gap: 16px; font-size: 12px; color: #6b7280; margin-bottom: 12px; flex-wrap: wrap; }
-    .task-actions { display: flex; gap: 8px; }
-    .btn-apply { flex: 1; padding: 10px; background: #7C3AED; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .btn-chat { padding: 10px 14px; background: #f3f4f6; color: #7C3AED; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
-    
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0 12px; border-top: 1px solid #e5e7eb; }
-    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #9ca3af; cursor: pointer; padding: 4px 12px; border: none; background: none; }
-    .nav-item.active { color: #7C3AED; }
-    .nav-item .nav-icon { font-size: 22px; }
-    
-    .fab { position: fixed; bottom: 80px; right: 20px; padding: 14px 20px; background: #7C3AED; color: white; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4); display: flex; align-items: center; gap: 8px; z-index: 100; }
-    
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
-    .modal-overlay.show { display: flex; }
-    .modal { background: white; border-radius: 20px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
-    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
-    .modal input, .modal textarea { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; }
-    .modal textarea { min-height: 80px; resize: vertical; }
-    .modal-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .modal-category { padding: 6px 14px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 12px; cursor: pointer; }
-    .modal-category.selected { background: #7C3AED; color: white; border-color: #7C3AED; }
-    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
-    .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .modal-actions .btn-cancel { background: #f3f4f6; color: #374151; }
-    .modal-actions .btn-submit { background: #7C3AED; color: white; }
-    
-    .page { display: none; }
-    .profile-card { background: white; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 16px; }
-    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #7C3AED; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; margin: 0 auto 12px; }
-    .profile-name { font-size: 20px; font-weight: 700; }
-    .profile-rating { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
-    .profile-stat { display: flex; align-items: center; gap: 4px; font-size: 14px; color: #6b7280; }
-    
+    /* ===== ЭКРАН ЗАГРУЗКИ ===== */
     .splash {
       position: fixed;
       top: 0;
@@ -91,7 +42,122 @@
     .dots .dot:nth-child(2) { animation-delay: 0.3s; }
     .dots .dot:nth-child(3) { animation-delay: 0.6s; }
     @keyframes dotBounce { 0%, 100% { transform: scale(0.6); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } }
-    
+
+    /* ===== ЭКРАН ВХОДА ===== */
+    .auth-container {
+      display: none;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .auth-container.active { display: block; }
+    .auth-card {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      margin-top: 40px;
+    }
+    .auth-card h2 { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; text-align: center; }
+    .auth-card .subtitle { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 24px; }
+    .auth-card input { width: 100%; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; background: #f9fafb; }
+    .auth-card input:focus { border-color: #7C3AED; background: white; }
+    .auth-card .btn-primary { width: 100%; padding: 14px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    .auth-card .btn-primary:hover { background: #6d28d9; }
+    .auth-card .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; }
+    .auth-card .switch-link { text-align: center; margin-top: 16px; font-size: 14px; color: #6b7280; }
+    .auth-card .switch-link span { color: #7C3AED; cursor: pointer; font-weight: 600; }
+    .auth-card .error { color: #ef4444; font-size: 13px; text-align: center; margin-bottom: 12px; display: none; }
+    .auth-card .error.show { display: block; }
+    .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid #fff; border-radius: 50%; border-top: 3px solid transparent; animation: spin 0.8s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ===== ЭКРАН ПРАВИЛ ===== */
+    .terms-container {
+      display: none;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .terms-container.active { display: block; }
+    .terms-card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .terms-card h2 { font-size: 22px; font-weight: 700; color: #1a1a2e; text-align: center; margin-bottom: 16px; }
+    .terms-card .rule { margin-bottom: 14px; padding: 12px; background: #f9fafb; border-radius: 12px; border-left: 4px solid #7C3AED; }
+    .terms-card .rule.important { border-left-color: #ef4444; background: #fef2f2; }
+    .terms-card .rule .title { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+    .terms-card .rule .desc { font-size: 13px; color: #6b7280; margin-top: 4px; line-height: 1.4; }
+    .terms-card .rule.important .title { color: #dc2626; }
+    .terms-card .rule.important .desc { color: #991b1b; }
+    .terms-card .btn-accept { width: 100%; padding: 14px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+    .terms-card .btn-accept:hover { background: #6d28d9; }
+
+    /* ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== */
+    .app-container { display: none; }
+    .app-container.active { display: block; }
+
+    .header { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 20px; color: #1a1a2e; }
+    .header .logout-btn { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; }
+    .header .logout-btn:hover { background: #dc2626; }
+
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; background: white; outline: none; }
+    .search-bar input:focus { border-color: #7C3AED; }
+    .filter-btn { padding: 12px 16px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+    .tab { padding: 8px 20px; border-radius: 20px; border: 1px solid #e0e0e0; background: white; font-size: 14px; cursor: pointer; white-space: nowrap; }
+    .tab.active { background: #7C3AED; color: white; border-color: #7C3AED; }
+
+    .task-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .task-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .task-category { padding: 4px 10px; background: #f0edff; color: #7C3AED; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .task-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .task-title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
+    .task-price { font-size: 17px; font-weight: 700; color: #10b981; }
+    .task-desc { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
+    .task-meta { display: flex; gap: 16px; font-size: 12px; color: #6b7280; margin-bottom: 12px; flex-wrap: wrap; }
+    .task-actions { display: flex; gap: 8px; }
+    .btn-apply { flex: 1; padding: 10px; background: #7C3AED; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-apply:disabled { background: #d1d5db; cursor: not-allowed; }
+    .btn-chat { padding: 10px 14px; background: #f3f4f6; color: #7C3AED; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0 12px; border-top: 1px solid #e5e7eb; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #9ca3af; cursor: pointer; padding: 4px 12px; border: none; background: none; }
+    .nav-item.active { color: #7C3AED; }
+    .nav-item .nav-icon { font-size: 22px; }
+
+    .fab { position: fixed; bottom: 80px; right: 20px; padding: 14px 20px; background: #7C3AED; color: white; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4); display: flex; align-items: center; gap: 8px; z-index: 100; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 20px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+    .modal input, .modal textarea { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .modal-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .modal-category { padding: 6px 14px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 12px; cursor: pointer; }
+    .modal-category.selected { background: #7C3AED; color: white; border-color: #7C3AED; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .modal-actions .btn-cancel { background: #f3f4f6; color: #374151; }
+    .modal-actions .btn-submit { background: #7C3AED; color: white; }
+
+    .page { display: none; }
+    .profile-card { background: white; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 16px; }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #7C3AED; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; margin: 0 auto 12px; }
+    .profile-name { font-size: 20px; font-weight: 700; }
+    .profile-rating { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+    .profile-stat { display: flex; align-items: center; gap: 4px; font-size: 14px; color: #6b7280; }
+
     @media (max-width: 480px) { body { padding: 12px; } }
     @media (min-width: 768px) { body { max-width: 600px; margin: 0 auto; } }
   </style>
@@ -110,12 +176,42 @@
   </div>
 </div>
 
+<!-- ===== ЭКРАН РЕГИСТРАЦИИ ===== -->
+<div class="auth-container" id="authContainer">
+  <div class="auth-card">
+    <h2 id="authTitle">Вход в TeenWork</h2>
+    <div class="subtitle" id="authSubtitle">Войдите в свой аккаунт</div>
+    <div class="error" id="authError"></div>
+    <input id="authName" placeholder="Имя" style="display:none;">
+    <input id="authEmail" placeholder="Email" type="email">
+    <input id="authPassword" placeholder="Пароль" type="password">
+    <button class="btn-primary" id="authBtn" onclick="handleAuth()">Войти</button>
+    <div class="switch-link">
+      <span id="switchText">Нет аккаунта? <span onclick="toggleAuth()">Зарегистрироваться</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ЭКРАН ПРАВИЛ ===== -->
+<div class="terms-container" id="termsContainer">
+  <div class="terms-card">
+    <h2>📋 Правила TeenWork</h2>
+    <div class="rule"><div class="title">1. Регистрация</div><div class="desc">При регистрации вы обязуетесь указывать достоверные данные.</div></div>
+    <div class="rule"><div class="title">2. Честность</div><div class="desc">Исполнитель обязуется выполнять работу качественно и в срок.</div></div>
+    <div class="rule"><div class="title">3. Безопасность</div><div class="desc">Запрещено передавать личные данные другим пользователям.</div></div>
+    <div class="rule"><div class="title">4. Оплата</div><div class="desc">Аванс 20% до начала работы, остаток 80% после выполнения.</div></div>
+    <div class="rule important"><div class="title">5. ОТВЕТСТВЕННОСТЬ</div><div class="desc">TeenWork не несёт ответственности за качество выполнения заказов, а также за любые споры между пользователями. Все претензии решаются между заказчиком и исполнителем напрямую.</div></div>
+    <div class="rule"><div class="title">6. Запрещено</div><div class="desc">Мошенничество, грубость, спам, распространение вредоносного ПО.</div></div>
+    <button class="btn-accept" onclick="acceptTerms()">✅ Я принимаю правила</button>
+  </div>
+</div>
+
 <!-- ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== -->
-<div id="app" style="display:none;">
+<div class="app-container" id="appContainer">
 
 <div class="header">
   <h1>🧑‍💻 TeenWork</h1>
-  <span style="font-size:24px;">⚡</span>
+  <button class="logout-btn" onclick="logout()">Выйти</button>
 </div>
 
 <div class="search-bar">
@@ -183,10 +279,10 @@
 <div class="page" id="pageProfile">
   <div class="profile-card">
     <div class="profile-avatar">👤</div>
-    <div class="profile-name">Пользователь</div>
+    <div class="profile-name" id="profileName">Пользователь</div>
     <div class="profile-rating">
-      <span class="profile-stat">⭐ 0.0</span>
-      <span class="profile-stat">✅ 0 заданий</span>
+      <span class="profile-stat">⭐ <span id="profileRating">0.0</span></span>
+      <span class="profile-stat">✅ <span id="profileTasks">0</span> заданий</span>
     </div>
   </div>
   <div style="display:flex; flex-direction:column; gap:8px;">
@@ -213,17 +309,20 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 console.log('✅ Firebase подключен!');
 
 // ============================================================
-// 2. ДАННЫЕ
+// 2. СОСТОЯНИЕ
 // ============================================================
 
 let tasks = [];
 let currentTab = 'all';
 let currentNav = 'home';
 let filterCategories = [];
+let currentUser = null;
+let userName = '';
 
 const allCategories = [
   'Написание текстов', 'Рерайт статей', 'Придумать слоган', 'Написание отзывов',
@@ -235,7 +334,151 @@ const allCategories = [
 ];
 
 // ============================================================
-// 3. ЗАГРУЗКА ЗАДАНИЙ ИЗ FIREBASE
+// 3. АУТЕНТИФИКАЦИЯ
+// ============================================================
+
+let isLogin = true;
+let authLoading = false;
+
+function toggleAuth() {
+  isLogin = !isLogin;
+  document.getElementById('authTitle').textContent = isLogin ? 'Вход в TeenWork' : 'Регистрация';
+  document.getElementById('authSubtitle').textContent = isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт';
+  document.getElementById('authName').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('switchText').innerHTML = isLogin ? 
+    'Нет аккаунта? <span onclick="toggleAuth()">Зарегистрироваться</span>' : 
+    'Уже есть аккаунт? <span onclick="toggleAuth()">Войти</span>';
+  document.getElementById('authError').classList.remove('show');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value.trim();
+  const name = document.getElementById('authName').value.trim();
+  const errorEl = document.getElementById('authError');
+  
+  errorEl.classList.remove('show');
+  
+  if (!email || !password) {
+    errorEl.textContent = 'Заполните все поля';
+    errorEl.classList.add('show');
+    return;
+  }
+  
+  if (!isLogin && !name) {
+    errorEl.textContent = 'Введите имя';
+    errorEl.classList.add('show');
+    return;
+  }
+  
+  authLoading = true;
+  document.getElementById('authBtn').disabled = true;
+  document.getElementById('authBtn').textContent = '⏳ Загрузка...';
+  
+  try {
+    if (isLogin) {
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      const result = await auth.createUserWithEmailAndPassword(email, password);
+      await result.user.updateProfile({ displayName: name });
+      await db.collection('users').doc(result.user.uid).set({
+        name: name,
+        email: email,
+        rating: 0,
+        completedTasks: 0,
+        createdAt: new Date().toISOString()
+      });
+    }
+  } catch (err) {
+    let msg = 'Ошибка';
+    if (err.code === 'auth/user-not-found') msg = 'Пользователь не найден';
+    else if (err.code === 'auth/wrong-password') msg = 'Неверный пароль';
+    else if (err.code === 'auth/email-already-in-use') msg = 'Эта почта уже используется';
+    else if (err.code === 'auth/weak-password') msg = 'Слабый пароль (минимум 6 символов)';
+    else if (err.code === 'auth/invalid-email') msg = 'Неверный формат почты';
+    else msg = err.message;
+    errorEl.textContent = msg;
+    errorEl.classList.add('show');
+    authLoading = false;
+    document.getElementById('authBtn').disabled = false;
+    document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+  }
+}
+
+function logout() {
+  auth.signOut();
+}
+
+// ============================================================
+// 4. ПРАВИЛА
+// ============================================================
+
+function acceptTerms() {
+  document.getElementById('termsContainer').classList.remove('active');
+  document.getElementById('appContainer').classList.add('active');
+  loadTasks();
+}
+
+// ============================================================
+// 5. ОТСЛЕЖИВАНИЕ СОСТОЯНИЯ ПОЛЬЗОВАТЕЛЯ
+// ============================================================
+
+auth.onAuthStateChanged(user => {
+  const splash = document.getElementById('splashScreen');
+  const authContainer = document.getElementById('authContainer');
+  const termsContainer = document.getElementById('termsContainer');
+  const appContainer = document.getElementById('appContainer');
+  
+  splash.classList.add('hidden');
+  setTimeout(() => { splash.style.display = 'none'; }, 800);
+  
+  if (user) {
+    currentUser = user;
+    userName = user.displayName || 'Пользователь';
+    document.getElementById('profileName').textContent = userName;
+    
+    // Проверяем, принимал ли правила
+    db.collection('users').doc(user.uid).get().then(doc => {
+      if (doc.exists && doc.data().termsAccepted) {
+        appContainer.classList.add('active');
+        loadTasks();
+      } else {
+        termsContainer.classList.add('active');
+      }
+    }).catch(() => {
+      termsContainer.classList.add('active');
+    });
+  } else {
+    authContainer.classList.add('active');
+    document.getElementById('authBtn').disabled = false;
+    document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+  }
+});
+
+// Сохраняем принятие правил
+function acceptTerms() {
+  if (currentUser) {
+    db.collection('users').doc(currentUser.uid).update({
+      termsAccepted: true
+    }).catch(() => {
+      db.collection('users').doc(currentUser.uid).set({
+        name: userName,
+        email: currentUser.email,
+        rating: 0,
+        completedTasks: 0,
+        termsAccepted: true,
+        createdAt: new Date().toISOString()
+      });
+    });
+  }
+  document.getElementById('termsContainer').classList.remove('active');
+  document.getElementById('appContainer').classList.add('active');
+  loadTasks();
+}
+
+// ============================================================
+// 6. ЗАГРУЗКА ЗАДАНИЙ ИЗ FIREBASE
 // ============================================================
 
 async function loadTasks() {
@@ -243,7 +486,6 @@ async function loadTasks() {
     const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
     tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderTasks();
-    hideSplash();
   } catch (error) {
     console.warn('⚠️ Ошибка загрузки из Firebase, используем примеры:', error);
     tasks = [
@@ -252,20 +494,11 @@ async function loadTasks() {
       { id: '3', title: 'Сделать дизайн в Canva', categories: ['Дизайн в Canva', 'Оформление обложек'], price: 400, description: 'Обложка для YouTube', deadline: '2 дня', author: 'Олег, 16 лет', rating: 4.9, responses: [] }
     ];
     renderTasks();
-    hideSplash();
   }
 }
 
-function hideSplash() {
-  const splash = document.getElementById('splashScreen');
-  const app = document.getElementById('app');
-  splash.classList.add('hidden');
-  app.style.display = 'block';
-  setTimeout(() => { splash.style.display = 'none'; }, 800);
-}
-
 // ============================================================
-// 4. ОТОБРАЖЕНИЕ
+// 7. ОТОБРАЖЕНИЕ
 // ============================================================
 
 function getFilteredTasks() {
@@ -309,24 +542,24 @@ function renderTasks() {
 }
 
 // ============================================================
-// 5. ОТКЛИК
+// 8. ОТКЛИК
 // ============================================================
 
 function applyForTask(taskId) {
   const task = tasks.find(t => t.id === taskId);
   if (!task) return;
-  if (task.responses?.some(r => r.executor === 'Ты')) {
+  if (task.responses?.some(r => r.executor === userName)) {
     alert('⚠️ Вы уже откликнулись на это задание');
     return;
   }
   if (!task.responses) task.responses = [];
-  task.responses.push({ executor: 'Ты', status: 'pending', createdAt: Date.now() });
+  task.responses.push({ executor: userName, status: 'pending', createdAt: Date.now() });
   renderTasks();
   alert('✅ Отклик отправлен! Ждите ответа от ' + task.author);
 }
 
 // ============================================================
-// 6. СОЗДАНИЕ ЗАДАНИЯ
+// 9. СОЗДАНИЕ ЗАДАНИЯ
 // ============================================================
 
 async function addTask() {
@@ -340,10 +573,24 @@ async function addTask() {
   if (!price || isNaN(price)) { alert('Введите корректную цену'); return; }
   if (!categories.length) { alert('Выберите хотя бы одну категорию'); return; }
   
-  const newTask = { title, categories, price, description: desc || 'Без описания', deadline, author: 'Ты', rating: 5.0, responses: [], createdAt: new Date().toISOString() };
+  const newTask = { 
+    title, 
+    categories, 
+    price, 
+    description: desc || 'Без описания', 
+    deadline, 
+    author: userName || 'Пользователь',
+    authorId: currentUser ? currentUser.uid : 'unknown',
+    rating: 5.0, 
+    responses: [], 
+    createdAt: new Date().toISOString() 
+  };
   
   try {
-    const docRef = await db.collection('tasks').add({ ...newTask, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    const docRef = await db.collection('tasks').add({ 
+      ...newTask, 
+      createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+    });
     tasks.unshift({ id: docRef.id, ...newTask });
     renderTasks();
     closeAddModal();
@@ -351,15 +598,15 @@ async function addTask() {
     document.getElementById('taskPrice').value = '';
     document.getElementById('taskDesc').value = '';
     document.getElementById('taskDeadline').value = '';
-    alert('✅ Задание опубликовано в Firebase!');
+    alert('✅ Задание опубликовано!');
   } catch (error) {
-    alert('❌ Ошибка сохранения в Firebase. Проверьте подключение.');
+    alert('❌ Ошибка сохранения. Проверьте подключение.');
     console.error(error);
   }
 }
 
 // ============================================================
-// 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 10. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================================
 
 function switchTab(tab) {
@@ -408,12 +655,6 @@ function applyFilter() {
   closeFilterModal();
   renderTasks();
 }
-
-// ============================================================
-// 8. ЗАПУСК
-// ============================================================
-
-loadTasks();
 </script>
 </body>
 </html>
