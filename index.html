@@ -49,14 +49,15 @@
       max-width: 400px;
       margin: 0 auto;
       padding: 20px;
+      min-height: 80vh;
     }
-    .auth-container.active { display: block; }
+    .auth-container.active { display: flex; align-items: center; justify-content: center; }
     .auth-card {
       background: white;
       border-radius: 20px;
       padding: 32px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-      margin-top: 40px;
+      width: 100%;
     }
     .auth-card h2 { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; text-align: center; }
     .auth-card .subtitle { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 24px; }
@@ -69,8 +70,6 @@
     .auth-card .switch-link span { color: #7C3AED; cursor: pointer; font-weight: 600; }
     .auth-card .error { color: #ef4444; font-size: 13px; text-align: center; margin-bottom: 12px; display: none; }
     .auth-card .error.show { display: block; }
-    .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid #fff; border-radius: 50%; border-top: 3px solid transparent; animation: spin 0.8s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ===== ЭКРАН ПРАВИЛ ===== */
     .terms-container {
@@ -78,14 +77,15 @@
       max-width: 500px;
       margin: 0 auto;
       padding: 20px;
+      min-height: 80vh;
     }
-    .terms-container.active { display: block; }
+    .terms-container.active { display: flex; align-items: center; justify-content: center; }
     .terms-card {
       background: white;
       border-radius: 20px;
       padding: 24px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-      margin-top: 20px;
+      width: 100%;
       max-height: 80vh;
       overflow-y: auto;
     }
@@ -100,7 +100,7 @@
     .terms-card .btn-accept:hover { background: #6d28d9; }
 
     /* ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== */
-    .app-container { display: none; }
+    .app-container { display: none; min-height: 80vh; }
     .app-container.active { display: block; }
 
     .header { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; }
@@ -390,6 +390,8 @@ async function handleAuth() {
         createdAt: new Date().toISOString()
       });
     }
+    // Успешный вход — скрываем форму
+    document.getElementById('authContainer').classList.remove('active');
   } catch (err) {
     let msg = 'Ошибка';
     if (err.code === 'auth/user-not-found') msg = 'Пользователь не найден';
@@ -408,6 +410,10 @@ async function handleAuth() {
 
 function logout() {
   auth.signOut();
+  // Показываем форму входа после выхода
+  document.getElementById('authContainer').classList.add('active');
+  document.getElementById('appContainer').classList.remove('active');
+  document.getElementById('termsContainer').classList.remove('active');
 }
 
 // ============================================================
@@ -415,6 +421,16 @@ function logout() {
 // ============================================================
 
 function acceptTerms() {
+  if (currentUser) {
+    db.collection('users').doc(currentUser.uid).set({
+      name: userName,
+      email: currentUser.email,
+      rating: 0,
+      completedTasks: 0,
+      termsAccepted: true,
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+  }
   document.getElementById('termsContainer').classList.remove('active');
   document.getElementById('appContainer').classList.add('active');
   loadTasks();
@@ -438,44 +454,34 @@ auth.onAuthStateChanged(user => {
     userName = user.displayName || 'Пользователь';
     document.getElementById('profileName').textContent = userName;
     
+    // Скрываем форму входа
+    authContainer.classList.remove('active');
+    
     // Проверяем, принимал ли правила
     db.collection('users').doc(user.uid).get().then(doc => {
       if (doc.exists && doc.data().termsAccepted) {
+        termsContainer.classList.remove('active');
         appContainer.classList.add('active');
         loadTasks();
       } else {
         termsContainer.classList.add('active');
+        appContainer.classList.remove('active');
       }
     }).catch(() => {
       termsContainer.classList.add('active');
+      appContainer.classList.remove('active');
     });
   } else {
+    // Пользователь вышел — показываем форму входа
     authContainer.classList.add('active');
+    appContainer.classList.remove('active');
+    termsContainer.classList.remove('active');
     document.getElementById('authBtn').disabled = false;
     document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+    tasks = [];
+    renderTasks();
   }
 });
-
-// Сохраняем принятие правил
-function acceptTerms() {
-  if (currentUser) {
-    db.collection('users').doc(currentUser.uid).update({
-      termsAccepted: true
-    }).catch(() => {
-      db.collection('users').doc(currentUser.uid).set({
-        name: userName,
-        email: currentUser.email,
-        rating: 0,
-        completedTasks: 0,
-        termsAccepted: true,
-        createdAt: new Date().toISOString()
-      });
-    });
-  }
-  document.getElementById('termsContainer').classList.remove('active');
-  document.getElementById('appContainer').classList.add('active');
-  loadTasks();
-}
 
 // ============================================================
 // 6. ЗАГРУЗКА ЗАДАНИЙ ИЗ FIREBASE
@@ -487,12 +493,8 @@ async function loadTasks() {
     tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderTasks();
   } catch (error) {
-    console.warn('⚠️ Ошибка загрузки из Firebase, используем примеры:', error);
-    tasks = [
-      { id: '1', title: 'Написать пост для Instagram', categories: ['Посты для соцсетей', 'Написание текстов'], price: 300, description: 'Креативный пост про ЗОЖ', deadline: '3 дня', author: 'Анна, 17 лет', rating: 4.8, responses: [] },
-      { id: '2', title: 'Помочь с математикой 7 класс', categories: ['Помощь с уроками', 'Проверка ДЗ'], price: 500, description: 'Объяснить тему "Квадратные уравнения"', deadline: 'Завтра', author: 'Сергей, 15 лет', rating: 4.5, responses: [] },
-      { id: '3', title: 'Сделать дизайн в Canva', categories: ['Дизайн в Canva', 'Оформление обложек'], price: 400, description: 'Обложка для YouTube', deadline: '2 дня', author: 'Олег, 16 лет', rating: 4.9, responses: [] }
-    ];
+    console.warn('⚠️ Ошибка загрузки из Firebase:', error);
+    tasks = [];
     renderTasks();
   }
 }
@@ -545,7 +547,7 @@ function renderTasks() {
 // 8. ОТКЛИК
 // ============================================================
 
-function applyForTask(taskId) {
+async function applyForTask(taskId) {
   const task = tasks.find(t => t.id === taskId);
   if (!task) return;
   if (task.responses?.some(r => r.executor === userName)) {
@@ -553,9 +555,27 @@ function applyForTask(taskId) {
     return;
   }
   if (!task.responses) task.responses = [];
-  task.responses.push({ executor: userName, status: 'pending', createdAt: Date.now() });
-  renderTasks();
-  alert('✅ Отклик отправлен! Ждите ответа от ' + task.author);
+  
+  const newResponse = { 
+    executor: userName, 
+    executorId: currentUser ? currentUser.uid : 'unknown',
+    status: 'pending', 
+    createdAt: new Date().toISOString() 
+  };
+  
+  task.responses.push(newResponse);
+  
+  // Сохраняем в Firebase
+  try {
+    await db.collection('tasks').doc(task.id).update({
+      responses: task.responses
+    });
+    renderTasks();
+    alert('✅ Отклик отправлен! Ждите ответа от ' + task.author);
+  } catch (error) {
+    console.error('Ошибка сохранения отклика:', error);
+    alert('❌ Ошибка отправки отклика');
+  }
 }
 
 // ============================================================
