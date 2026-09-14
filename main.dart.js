@@ -289,6 +289,10 @@ class ChatService {
             final interlocutorId = (data['participants'] as List? ?? [])
                 .firstWhere((id) => id != userId, orElse: () => '');
 
+            // Для отображения берём имя собеседника из chats (оно там всегда
+            // сохранено как interlocutorName). Если чат создан «наоборот»,
+            // то есть автор задачи инициирует общение с исполнителем,
+            // в поле interlocutorName тоже записано корректное имя.
             final topic = AIService.detectChatTopic(
                 messages.map((m) => m.text).toList());
 
@@ -305,10 +309,16 @@ class ChatService {
         });
   }
 
+  /// Возвращает существующий чат с [interlocutorId] или создаёт новый.
+  /// Поле interlocutorName сохраняется от лица того, кто в данный момент
+  /// открывает чат, но в UI отображается имя собеседника. Для корректного
+  /// отображения у обеих сторон используется отдельное поле participantsNames.
   Future<Chat> getOrCreateChat(
       String interlocutorId, String interlocutorName) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Пользователь не авторизован');
+
+    final myName = _auth.currentUser?.displayName ?? 'Пользователь';
 
     final existing = await _firestore
         .collection('chats')
@@ -330,12 +340,18 @@ class ChatService {
                 ))
             .toList();
 
+        // Определяем корректное имя собеседника именно для текущего userId.
+        final names = Map<String, dynamic>.from(data['participantNames'] ?? {});
+        final displayName = names[interlocutorId]?.toString() ??
+            data['interlocutorName'] ??
+            interlocutorName;
+
         final topic =
             AIService.detectChatTopic(messages.map((m) => m.text).toList());
 
         return Chat(
           id: doc.id,
-          interlocutor: data['interlocutorName'] ?? 'Пользователь',
+          interlocutor: displayName,
           interlocutorId: interlocutorId,
           messages: messages,
           lastUpdated:
@@ -347,7 +363,10 @@ class ChatService {
 
     final docRef = await _firestore.collection('chats').add({
       'participants': [userId, interlocutorId],
-      'interlocutorName': interlocutorName,
+      'participantNames': {
+        userId: myName,
+        interlocutorId: interlocutorName,
+      },
       'messages': [],
       'lastUpdated': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
@@ -382,12 +401,17 @@ class ChatService {
       final interlocutorId = (data['participants'] as List? ?? [])
           .firstWhere((id) => id != userId, orElse: () => '');
 
+      final names = Map<String, dynamic>.from(data['participantNames'] ?? {});
+      final displayName = names[interlocutorId]?.toString() ??
+          data['interlocutorName'] ??
+          'Пользователь';
+
       final topic =
           AIService.detectChatTopic(messages.map((m) => m.text).toList());
 
       return Chat(
         id: doc.id,
-        interlocutor: data['interlocutorName'] ?? 'Пользователь',
+        interlocutor: displayName,
         interlocutorId: interlocutorId,
         messages: messages,
         lastUpdated:
@@ -608,6 +632,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 2, milliseconds: 500), () {
+      if (!mounted) return;
       if (FirebaseAuth.instance.currentUser != null) {
         Navigator.pushReplacement(
           context,
@@ -752,7 +777,7 @@ class _DotAnimationState extends State<DotAnimation>
     _animation = Tween<double>(begin: 0.3, end: 1.0).animate(_controller);
 
     Future.delayed(Duration(milliseconds: widget.delay), () {
-      _controller.forward();
+      if (mounted) _controller.forward();
     });
   }
 
@@ -839,7 +864,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
             content: Text('Произошла ошибка'),
             backgroundColor: AppColors.danger),
       );
@@ -847,36 +872,71 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
+  /// Восстановление пароля по email через Firebase.
+  /// Firebase пришлёт письмо со ссылкой для сброса пароля
+  /// на почту, указанную при регистрации.
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
+
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Введите email для сброса пароля'),
+          content: Text('Введите email, указанный при регистрации'),
           backgroundColor: AppColors.warning,
         ),
       );
       return;
     }
+
+    // Простая валидация формата email.
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Неверный формат email'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Письмо для сброса пароля отправлено на $email'),
+          content: Text(
+            'Письмо для восстановления пароля отправлено на $email. '
+            'Проверьте почту (и папку «Спам»).',
+          ),
           backgroundColor: AppColors.accent,
+          duration: const Duration(seconds: 5),
         ),
       );
     } on FirebaseAuthException catch (e) {
-      String message = 'Ошибка сброса пароля';
+      String message = 'Не удалось отправить письмо';
       if (e.code == 'user-not-found') {
         message = 'Пользователь с таким email не найден';
+      } else if (e.code == 'invalid-email') {
+        message = 'Неверный формат email';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Слишком много попыток. Попробуйте позже';
       }
-      if (e.code == 'invalid-email') message = 'Неверный формат email';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: AppColors.danger),
       );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось отправить письмо. Проверьте соединение'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -939,14 +999,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       obscureText: true,
                     ),
+                    // Кнопка "Забыл пароль?" — всегда видна на экране входа.
                     if (_isLogin)
                       Align(
                         alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: _resetPassword,
-                          child: const Text(
-                            'Забыл пароль?',
-                            style: TextStyle(color: AppColors.primary),
+                        child: TextButton.icon(
+                          onPressed: _isLoading ? null : _resetPassword,
+                          icon: const Icon(Icons.lock_reset, size: 18),
+                          label: const Text('Забыли пароль?'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                           ),
                         ),
                       ),
@@ -1412,9 +1476,11 @@ class MyResponsesScreen extends StatefulWidget {
 
 class _MyResponsesScreenState extends State<MyResponsesScreen> {
   final TaskService _taskService = TaskService();
-  StreamSubscription? _subscription;
+  final ChatService _chatService = ChatService();
+  StreamSubscription<List<Task>>? _subscription;
   List<Map<String, dynamic>> _myResponses = [];
   bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -1429,29 +1495,44 @@ class _MyResponsesScreenState extends State<MyResponsesScreen> {
   }
 
   void _loadResponses() {
-    _subscription = _taskService.watchTasks().listen((tasks) {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    _subscription?.cancel();
 
-      final myResponses = <Map<String, dynamic>>[];
-      for (final task in tasks) {
-        for (final response in task.responses) {
-          if (response.executorId == userId) {
-            myResponses.add({
-              'task': task,
-              'response': response,
-            });
+    _subscription = _taskService.watchTasks().listen(
+      (tasks) {
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId == null) return;
+
+        final myResponses = <Map<String, dynamic>>[];
+        for (final task in tasks) {
+          for (final response in task.responses) {
+            if (response.executorId == userId) {
+              myResponses.add({
+                'task': task,
+                'response': response,
+              });
+            }
           }
         }
-      }
 
-      if (mounted) {
+        if (mounted) {
+          setState(() {
+            _myResponses = myResponses;
+            _isLoading = false;
+          });
+        }
+      },
+      onError: (e) {
+        if (!mounted) return;
         setState(() {
-          _myResponses = myResponses;
+          _error = 'Не удалось загрузить отклики. Проверьте соединение.';
           _isLoading = false;
         });
-      }
-    });
+      },
+    );
   }
 
   String _getStatusText(String status) {
@@ -1493,6 +1574,38 @@ class _MyResponsesScreenState extends State<MyResponsesScreen> {
     }
   }
 
+  /// Открывает (или создаёт) чат с автором задания.
+  Future<void> _openChatWithAuthor(Task task) async {
+    if (task.authorId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Автор задания недоступен для чата'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+    try {
+      final chat =
+          await _chatService.getOrCreateChat(task.authorId, task.author);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailScreen(chatId: chat.id),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка открытия чата: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1504,114 +1617,172 @@ class _MyResponsesScreenState extends State<MyResponsesScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _myResponses.isEmpty
+          : _error != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Вы ещё не откликнулись на задания',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textSecondary,
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_off,
+                            size: 64, color: AppColors.textSecondary),
+                        const SizedBox(height: 16),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Найдите интересное задание на главной',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _loadResponses,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Повторить'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _myResponses.length,
-                  itemBuilder: (context, index) {
-                    final item = _myResponses[index];
-                    final Task task = item['task'];
-                    final Response response = item['response'];
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      color: AppColors.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+              : _myResponses.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox,
+                              size: 64, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Вы ещё не откликнулись на задания',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Найдите интересное задание на главной',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _myResponses.length,
+                      itemBuilder: (context, index) {
+                        final item = _myResponses[index];
+                        final Task task = item['task'];
+                        final Response response = item['response'];
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          color: AppColors.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    task.title,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        task.title,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      task.priceDisplay,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.accent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      _getStatusIcon(response.status),
+                                      size: 18,
+                                      color:
+                                          _getStatusColor(response.status),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _getStatusText(response.status),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            _getStatusColor(response.status),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person,
+                                        size: 14,
+                                        color: AppColors.textSecondary),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Автор: ${task.author}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () =>
+                                        _openChatWithAuthor(task),
+                                    icon: const Icon(Icons.chat, size: 18),
+                                    label: const Text('Написать автору'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: const BorderSide(
+                                          color: AppColors.primary),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
                                     ),
                                   ),
                                 ),
-                                Text(
-                                  task.priceDisplay,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.accent,
-                                  ),
-                                ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  _getStatusIcon(response.status),
-                                  size: 18,
-                                  color: _getStatusColor(response.status),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _getStatusText(response.status),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _getStatusColor(response.status),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.person,
-                                    size: 14,
-                                    color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Автор: ${task.author}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                          ),
+                        );
+                      },
+                    ),
     );
   }
 }
@@ -2153,8 +2324,8 @@ class _MainScreenState extends State<MainScreen> {
   double _userRating = 0.0;
   int _userCompletedTasks = 0;
 
-  StreamSubscription? _tasksSubscription;
-  StreamSubscription? _chatsSubscription;
+  StreamSubscription<List<Task>>? _tasksSubscription;
+  StreamSubscription<List<Chat>>? _chatsSubscription;
 
   User? get _currentUser => FirebaseAuth.instance.currentUser;
 
@@ -2192,7 +2363,7 @@ class _MainScreenState extends State<MainScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка загрузки профиля: $e');
+      debugPrint('Ошибка загрузки профиля: $e');
     }
   }
 
@@ -2244,19 +2415,43 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _loadTasks() {
-    _tasksSubscription = _taskService.watchTasks().listen((tasks) {
-      if (mounted) {
-        setState(() => _tasks = tasks);
-      }
-    });
+    _tasksSubscription = _taskService.watchTasks().listen(
+      (tasks) {
+        if (mounted) {
+          setState(() => _tasks = tasks);
+        }
+      },
+      onError: (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Не удалось загрузить задания'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      },
+    );
   }
 
   void _loadChats() {
-    _chatsSubscription = _chatService.watchChats().listen((chats) {
-      if (mounted) {
-        setState(() => _chats = chats);
-      }
-    });
+    _chatsSubscription = _chatService.watchChats().listen(
+      (chats) {
+        if (mounted) {
+          setState(() => _chats = chats);
+        }
+      },
+      onError: (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Не удалось загрузить чаты'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      },
+    );
   }
 
   List<Task> get _filteredTasks {
@@ -2343,6 +2538,56 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  /// Открывает (или создаёт) чат с произвольным пользователем.
+  Future<void> _openChatWithUser(String uid, String name) async {
+    if (uid.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Нет данных пользователя для чата'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+    try {
+      final chat = await _chatService.getOrCreateChat(uid, name);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailScreen(chatId: chat.id),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка открытия чата: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
+  /// Открывает чат с автором задания (для исполнителя).
+  Future<void> _openChat(Task task) async {
+    await _openChatWithUser(task.authorId, task.author);
+  }
+
+  String _statusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Ожидает';
+      case 'accepted':
+        return 'Принят';
+      case 'rejected':
+        return 'Отклонён';
+      default:
+        return status;
+    }
+  }
+
   void _viewResponses(Task task) {
     if (task.responses.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2366,6 +2611,8 @@ class _MainScreenState extends State<MainScreen> {
             itemBuilder: (context, index) {
               final response = freshTask.responses[index];
               return ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 leading: CircleAvatar(
                   backgroundColor: response.status == 'accepted'
                       ? AppColors.accent
@@ -2380,62 +2627,70 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
                 title: Text(response.executorName),
-                subtitle: Text(
-                  response.status == 'pending'
-                      ? 'Ожидает'
-                      : response.status == 'accepted'
-                          ? 'Принят'
-                          : 'Отклонён',
+                subtitle: Text(_statusText(response.status)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Кнопка "Написать" доступна ВСЕГДА — и автору задачи,
+                    // и до принятия отклика, и после.
+                    IconButton(
+                      tooltip: 'Написать исполнителю',
+                      icon: const Icon(Icons.chat,
+                          color: AppColors.primary),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _openChatWithUser(
+                          response.executorId,
+                          response.executorName,
+                        );
+                      },
+                    ),
+                    if (response.status == 'pending') ...[
+                      IconButton(
+                        tooltip: 'Принять',
+                        icon: const Icon(Icons.check,
+                            color: AppColors.accent),
+                        onPressed: () async {
+                          await _taskService.updateResponseStatus(
+                            freshTask.id,
+                            response.id,
+                            'accepted',
+                          );
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Исполнитель ${response.executorName} принят'),
+                              backgroundColor: AppColors.accent,
+                            ),
+                          );
+                          Navigator.pop(context);
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'Отклонить',
+                        icon: const Icon(Icons.close,
+                            color: AppColors.danger),
+                        onPressed: () async {
+                          await _taskService.updateResponseStatus(
+                            freshTask.id,
+                            response.id,
+                            'rejected',
+                          );
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Исполнитель ${response.executorName} отклонён'),
+                              backgroundColor: AppColors.danger,
+                            ),
+                          );
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ],
                 ),
-                trailing: response.status == 'pending'
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check,
-                                color: AppColors.accent),
-                            onPressed: () async {
-                              await _taskService.updateResponseStatus(
-                                freshTask.id,
-                                response.id,
-                                'accepted',
-                              );
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Исполнитель ${response.executorName} принят'),
-                                  backgroundColor: AppColors.accent,
-                                ),
-                              );
-                              Navigator.pop(context);
-                              _viewResponses(freshTask);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close,
-                                color: AppColors.danger),
-                            onPressed: () async {
-                              await _taskService.updateResponseStatus(
-                                freshTask.id,
-                                response.id,
-                                'rejected',
-                              );
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Исполнитель ${response.executorName} отклонён'),
-                                  backgroundColor: AppColors.danger,
-                                ),
-                              );
-                              Navigator.pop(context);
-                              _viewResponses(freshTask);
-                            },
-                          ),
-                        ],
-                      )
-                    : null,
               );
             },
           ),
@@ -2813,31 +3068,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Future<void> _openChat(Task task) async {
-    final user = _currentUser;
-    if (user == null) return;
-
-    try {
-      final chat =
-          await _chatService.getOrCreateChat(task.authorId, task.author);
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatDetailScreen(chatId: chat.id),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ошибка открытия чата: $e'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -2965,13 +3195,15 @@ class _MainScreenState extends State<MainScreen> {
                                             : 'Нет заданий',
                                         style: const TextStyle(
                                             color: AppColors.textSecondary),
+                                        textAlign: TextAlign.center,
                                       ),
                                       if (showRecommendations) ...[
                                         const SizedBox(height: 16),
                                         ElevatedButton(
                                           onPressed: _showInterestsDialog,
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppColors.primary,
+                                            backgroundColor:
+                                                AppColors.primary,
                                             foregroundColor: Colors.white,
                                           ),
                                           child: const Text('Выбрать интересы'),
@@ -3061,6 +3293,16 @@ class _MainScreenState extends State<MainScreen> {
     final user = _currentUser;
     final isMyTask = task.authorId == user?.uid;
     final totalResponses = task.responses.length;
+
+    // Для автора задачи — берём первого (или принятого) исполнителя,
+    // чтобы дать быстрый доступ к чату прямо с карточки.
+    Response? acceptedResponse;
+    if (isMyTask && task.responses.isNotEmpty) {
+      acceptedResponse = task.responses.firstWhere(
+        (r) => r.status == 'accepted',
+        orElse: () => task.responses.first,
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -3192,16 +3434,29 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Автору задачи: посмотреть отклики.
                 if (isMyTask && totalResponses > 0)
                   IconButton(
                     onPressed: () => _viewResponses(task),
                     icon: const Icon(Icons.people, color: AppColors.primary),
                     tooltip: 'Посмотреть отклики',
                   ),
+                // Автору задачи: быстрый чат с первым/принятым исполнителем.
+                if (isMyTask && acceptedResponse != null)
+                  IconButton(
+                    tooltip: 'Чат с исполнителем',
+                    onPressed: () => _openChatWithUser(
+                      acceptedResponse!.executorId,
+                      acceptedResponse.executorName,
+                    ),
+                    icon: const Icon(Icons.chat, color: AppColors.primary),
+                  ),
+                // Исполнителю: чат с автором задания.
                 if (!isMyTask)
                   IconButton(
                     onPressed: () => _openChat(task),
                     icon: const Icon(Icons.chat, color: AppColors.primary),
+                    tooltip: 'Написать автору',
                   ),
               ],
             ),
