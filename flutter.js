@@ -1,36 +1,1045 @@
-(()=>{var C={blink:!0,gecko:!1,webkit:!1,unknown:!1},A=()=>navigator.vendor==="Google Inc."||navigator.userAgent.includes("Edg/")?"blink":navigator.vendor==="Apple Computer, Inc."?"webkit":navigator.vendor===""&&navigator.userAgent.includes("Firefox")?"gecko":"unknown",T=A(),x=()=>typeof ImageDecoder>"u"?!1:T==="blink",R=()=>typeof Intl.v8BreakIterator<"u"&&typeof Intl.Segmenter<"u",j=()=>typeof window.TextCluster<"u",B=()=>{let n=[0,97,115,109,1,0,0,0,1,5,1,95,1,120,0];return WebAssembly.validate(new Uint8Array(n))},K=()=>{let n=document.createElement("canvas");return n.width=1,n.height=1,n.getContext("webgl2")!=null?2:n.getContext("webgl")!=null?1:-1},$=()=>window.chrome&&chrome.runtime&&chrome.runtime.id,f={browserEngine:T,hasImageCodecs:x(),hasChromiumBreakIterators:R(),hasTextCluster:j(),supportsWasmGC:B(),crossOriginIsolated:window.crossOriginIsolated,webGLVersion:K(),isChromeExtension:$()};function m(...n){return new URL(W(...n),document.baseURI).toString()}function W(...n){return n.filter(e=>!!e).map((e,s)=>s===0?L(e):F(L(e))).filter(e=>e.length).join("/")}function F(n){let e=0;for(;e<n.length&&n.charAt(e)==="/";)e++;return n.substring(e)}function L(n){let e=n.length;for(;e>0&&n.charAt(e-1)==="/";)e--;return n.substring(0,e)}function _(n,e){return n.canvasKitBaseUrl?n.canvasKitBaseUrl:e.engineRevision&&!e.useLocalCanvasKit?W("https://www.gstatic.com/flutter-canvaskit",e.engineRevision):"canvaskit"}var g=class{constructor(){this._scriptLoaded=!1}setTrustedTypesPolicy(e){this._ttPolicy=e}async loadEntrypoint(e){let{entrypointUrl:s=m("main.dart.js"),onEntrypointLoaded:t,nonce:r}=e||{};return this._loadJSEntrypoint(s,t,r)}async load(e,s,t,r,i){i??=a=>{a.initializeEngine(t).then(l=>l.runApp())};let{entrypointBaseUrl:o}=t,{entryPointBaseUrl:c}=t;if(!o&&c&&(console.warn("[deprecated] `entryPointBaseUrl` is deprecated and will be removed in a future release. Use `entrypointBaseUrl` instead."),o=c),e.compileTarget==="dart2wasm")return this._loadWasmEntrypoint(e,s,o,i);{let a=e.mainJsPath??"main.dart.js",l=m(o,a);return this._loadJSEntrypoint(l,i,r)}}didCreateEngineInitializer(e){typeof this._didCreateEngineInitializerResolve=="function"&&(this._didCreateEngineInitializerResolve(e),this._didCreateEngineInitializerResolve=null,delete _flutter.loader.didCreateEngineInitializer),typeof this._onEntrypointLoaded=="function"&&this._onEntrypointLoaded(e)}_loadJSEntrypoint(e,s,t){let r=typeof s=="function";if(!this._scriptLoaded){this._scriptLoaded=!0;let i=this._createScriptTag(e,t);if(r)console.debug("Injecting <script> tag. Using callback."),this._onEntrypointLoaded=s,document.head.append(i);else return new Promise((o,c)=>{console.debug("Injecting <script> tag. Using Promises. Use the callback approach instead!"),this._didCreateEngineInitializerResolve=o,i.addEventListener("error",c),document.head.append(i)})}}async _loadWasmEntrypoint(e,s,t,r){if(!this._scriptLoaded){this._scriptLoaded=!0,this._onEntrypointLoaded=r;let{mainWasmPath:i,jsSupportRuntimePath:o}=e,c=m(t,i),a=m(t,o);this._ttPolicy!=null&&(a=this._ttPolicy.createScriptURL(a));let p=(await import(a)).compileStreaming(fetch(c)),d;e.renderer==="skwasm"?d=(async()=>{let u=await s.skwasm;return window._flutter_skwasmInstance=u,{skwasm:u.wasmExports,skwasmWrapper:u,ffi:{memory:u.wasmMemory}}})():d=Promise.resolve({}),await(await(await p).instantiate(await d)).invokeMain()}}_createScriptTag(e,s){let t=document.createElement("script");t.type="application/javascript",s&&(t.nonce=s);let r=e;return this._ttPolicy!=null&&(r=this._ttPolicy.createScriptURL(e)),t.src=r,t}};async function E(n,e,s){if(e<0)return n;let t,r=new Promise((i,o)=>{t=setTimeout(()=>{o(new Error(`${s} took more than ${e}ms to resolve. Moving on.`,{cause:E}))},e)});return Promise.race([n,r]).finally(()=>{clearTimeout(t)})}var v=class{setTrustedTypesPolicy(e){this._ttPolicy=e}loadServiceWorker(e){if(!e||!("serviceWorker"in navigator))return Promise.resolve();let s=()=>{console.warn(`Loading the service worker using Flutter bootstrap is deprecated and will stop working in a future release.
-For more details, see: https://github.com/flutter/flutter/issues/156910`)},t=()=>{let{serviceWorkerVersion:r,serviceWorkerUrl:i=m(`flutter_service_worker.js?v=${r}`),timeoutMillis:o=4e3}=e,c=i;this._ttPolicy!=null&&(c=this._ttPolicy.createScriptURL(c));let a=navigator.serviceWorker.register(c).then(l=>this._getNewServiceWorker(l,r)).then(this._waitForServiceWorkerActivation);return E(a,o,"prepareServiceWorker")};return e.serviceWorkerUrl!=null?(s(),t()):navigator.serviceWorker.getRegistration().then(r=>r?t():Promise.resolve())}async _getNewServiceWorker(e,s){if(!e.active&&(e.installing||e.waiting))return console.debug("Installing/Activating first service worker."),e.installing||e.waiting;if(e.active.scriptURL.endsWith(s))return console.debug("Loading from existing service worker."),e.active;{let t=await e.update();return console.debug("Updating service worker."),t.installing||t.waiting||t.active}}async _waitForServiceWorkerActivation(e){if(!e||e.state==="activated")if(e){console.debug("Service worker already active.");return}else throw new Error("Cannot activate a null service worker!");return new Promise((s,t)=>{e.addEventListener("statechange",()=>{e.state==="activated"&&(console.debug("Activated new service worker."),s())})})}};var y=class{constructor(e,s="flutter-js"){let t=e||[/\.js$/,/\.mjs$/];window.trustedTypes&&(this.policy=trustedTypes.createPolicy(s,{createScriptURL:function(r){if(r.startsWith("blob:"))return r;let i=new URL(r,window.location),o=i.pathname.split("/").pop();if(t.some(a=>a.test(o)))return i.toString();console.error("URL rejected by TrustedTypes policy",s,":",r,"(download prevented)")}}))}};var b=(n,e)=>{let s=window._flutter?.buildConfig?.wasmHashes,t=s?.[e];if(!t&&e.includes("/")){let a=e.split("/").pop();t=s?.[a]}let r="crossOriginStorage"in navigator&&"requestFileHandles"in navigator.crossOriginStorage;r&&console.log("Cross-Origin Storage is supported. See https://wicg.github.io/cross-origin-storage/ for more details.");let i=async a=>{let l={algorithm:"SHA-256",value:a};try{let[p]=await navigator.crossOriginStorage.requestFileHandles([l]),d=await p.getFile();return new Response(d,{headers:{"Content-Type":"application/wasm"}})}catch(p){p.name==="NotAllowedError"?console.warn(`Not allowed to retrieve ${e} (hash: ${a}).`):p.name!=="NotFoundError"&&console.warn(`Unexpected error during retrieval of ${e} (hash: ${a}).`,p)}},o=async()=>{if(r&&t){let l=await i(t);if(l)return l}let a=await fetch(n);if(r&&t&&a.ok){let l={algorithm:"SHA-256",value:t},p=a.clone();(async()=>{try{let d=await p.blob(),[h]=await navigator.crossOriginStorage.requestFileHandles([l],{create:!0}),w=await h.createWritable();await w.write(d),await w.close()}catch(d){console.warn(`Error storing ${e} (hash: ${t}):`,d)}})()}return a},c=WebAssembly.compileStreaming(o());return(a,l)=>((async()=>{let p=await c,d=await WebAssembly.instantiate(p,a);l(d,p)})(),{})};var I=(n,e,s,t)=>(window.flutterCanvasKitLoaded=(async()=>{if(window.flutterCanvasKit)return window.flutterCanvasKit;let r=s.hasChromiumBreakIterators&&s.hasImageCodecs;if(!r&&e.canvasKitVariant=="chromium")throw"Chromium CanvasKit variant specifically requested, but unsupported in this browser";let i=r&&e.canvasKitVariant!=="full",o=i&&e.preferWebParagraph&&s.hasTextCluster,c=t;o?c=m(c,"webparagraph"):i&&(c=m(c,"chromium"));let a=m(c,"canvaskit.js");n.flutterTT.policy&&(a=n.flutterTT.policy.createScriptURL(a));let l="canvaskit.wasm";o?l="webparagraph/canvaskit.wasm":i&&(l="chromium/canvaskit.wasm");let p=b(m(c,"canvaskit.wasm"),l),d=await import(a);return window.flutterCanvasKit=await d.default({instantiateWasm:p}),window.flutterCanvasKit})(),window.flutterCanvasKitLoaded);var U=async(n,e,s,t)=>{let i=!s.hasImageCodecs||!s.hasChromiumBreakIterators?"skwasm_heavy":e.enableWimp?"wimp":"skwasm",o=m(t,`${i}.js`),c=o;n.flutterTT.policy&&(c=n.flutterTT.policy.createScriptURL(c));let a=b(m(t,`${i}.wasm`),`${i}.wasm`),l=await import(c);return!s.crossOriginIsolated&&!e.forceSingleThreadedSkwasm&&!e.suppressMultithreadingWarning&&console.warn(`Flutter Web: Skwasm uses multi-threading and web workers for better performance, but your page needs to be cross-origin isolated to support multi-threading. Skwasm will run in single-threaded mode.
-To enable multithreading, serve your app with these HTTP response headers:
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
-See https://web.dev/articles/coop-coep for guidance.
-To silence this warning, set \`suppressMultithreadingWarning: true\` in your Flutter configuration.`),await l.default({skwasmSingleThreaded:e.enableWimp||!s.crossOriginIsolated||s.isChromeExtension||e.forceSingleThreadedSkwasm,instantiateWasm:a,locateFile:(p,d)=>p.endsWith(".ww.js")?URL.createObjectURL(new Blob([`
-"use strict";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TeenWork — Работа для подростков</title>
 
-let eventListener;
-eventListener = (message) => {
-    const pendingMessages = [];
-    const data = message.data;
-    data["instantiateWasm"] = (info,receiveInstance) => {
-        const instance = new WebAssembly.Instance(data["wasm"], info);
-        return receiveInstance(instance, data["wasm"])
-    };
-    import(data.js).then(async (skwasm) => {
-        await skwasm.default(data);
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
-        removeEventListener("message", eventListener);
-        for (const message of pendingMessages) {
-            dispatchEvent(message);
-        }
-    });
-    removeEventListener("message", eventListener);
-    eventListener = (message) => {
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: #f5f5f5; min-height: 100vh; padding: 16px; padding-bottom: 80px; }
 
-        pendingMessages.push(message);
-    };
+    /* ===== SPLASH ===== */
+    .splash { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #7C3AED, #6d28d9, #4c1d95); z-index: 9999; transition: opacity .8s ease; }
+    .splash.hidden { opacity: 0; pointer-events: none; }
+    .splash .logo-circle { width: 140px; height: 140px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 70px; color: white; animation: pulse 2s ease-in-out infinite, scaleIn 1s ease-out; }
+    @keyframes scaleIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    .splash .app-name { margin-top: 24px; font-size: 38px; font-weight: 700; color: white; letter-spacing: 2px; animation: fadeIn 1.2s ease-out; }
+    .splash .app-subtitle { font-size: 16px; color: rgba(255,255,255,0.7); margin-top: 8px; animation: fadeIn 1.5s ease-out; }
+    @keyframes fadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+    .dots { margin-top: 40px; display: flex; gap: 12px; }
+    .dots .dot { width: 14px; height: 14px; background: white; border-radius: 50%; animation: dotBounce 1.4s ease-in-out infinite; }
+    .dots .dot:nth-child(1) { animation-delay: 0s; }
+    .dots .dot:nth-child(2) { animation-delay: .3s; }
+    .dots .dot:nth-child(3) { animation-delay: .6s; }
+    @keyframes dotBounce { 0%, 100% { transform: scale(.6); opacity: .5; } 50% { transform: scale(1); opacity: 1; } }
 
-    addEventListener("message", eventListener);
+    /* ===== AUTH ===== */
+    .auth-container { display: none; max-width: 400px; margin: 0 auto; padding: 20px; min-height: 80vh; }
+    .auth-container.active { display: flex; align-items: center; justify-content: center; }
+    .auth-card { background: white; border-radius: 20px; padding: 32px; box-shadow: 0 8px 30px rgba(0,0,0,.1); width: 100%; }
+    .auth-card h2 { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; text-align: center; }
+    .auth-card .subtitle { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 24px; }
+    .auth-card input { width: 100%; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; background: #f9fafb; }
+    .auth-card input:focus { border-color: #7C3AED; background: white; }
+    .auth-card .btn-primary { width: 100%; padding: 14px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    .auth-card .btn-primary:hover { background: #6d28d9; }
+    .auth-card .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; }
+    .auth-card .switch-link { text-align: center; margin-top: 16px; font-size: 14px; color: #6b7280; }
+    .auth-card .switch-link span { color: #7C3AED; cursor: pointer; font-weight: 600; }
+    .auth-card .forgot-link { text-align: right; font-size: 13px; margin-bottom: 4px; }
+    .auth-card .forgot-link span { color: #7C3AED; cursor: pointer; font-weight: 600; }
+    .auth-card .error { color: #ef4444; font-size: 13px; text-align: center; margin-bottom: 12px; display: none; }
+    .auth-card .error.show { display: block; }
+    .auth-card .info { color: #10b981; font-size: 13px; text-align: center; margin-bottom: 12px; display: none; }
+    .auth-card .info.show { display: block; }
+
+    /* ===== TERMS ===== */
+    .terms-container { display: none; max-width: 500px; margin: 0 auto; padding: 20px; min-height: 80vh; }
+    .terms-container.active { display: flex; align-items: center; justify-content: center; }
+    .terms-card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,.1); width: 100%; max-height: 80vh; overflow-y: auto; }
+    .terms-card h2 { font-size: 22px; font-weight: 700; color: #1a1a2e; text-align: center; margin-bottom: 16px; }
+    .terms-card .rule { margin-bottom: 14px; padding: 12px; background: #f9fafb; border-radius: 12px; border-left: 4px solid #7C3AED; }
+    .terms-card .rule.important { border-left-color: #ef4444; background: #fef2f2; }
+    .terms-card .rule .title { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+    .terms-card .rule .desc { font-size: 13px; color: #6b7280; margin-top: 4px; line-height: 1.4; }
+    .terms-card .rule.important .title { color: #dc2626; }
+    .terms-card .rule.important .desc { color: #991b1b; }
+    .terms-card .btn-accept { width: 100%; padding: 14px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+
+    /* ===== APP ===== */
+    .app-container { display: none; min-height: 80vh; }
+    .app-container.active { display: block; }
+    .header { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 20px; color: #1a1a2e; }
+    .header .logout-btn { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; }
+
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; background: white; outline: none; }
+    .search-bar input:focus { border-color: #7C3AED; }
+    .filter-btn { padding: 12px 16px; background: #7C3AED; color: white; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+    .tab { padding: 8px 20px; border-radius: 20px; border: 1px solid #e0e0e0; background: white; font-size: 14px; cursor: pointer; white-space: nowrap; }
+    .tab.active { background: #7C3AED; color: white; border-color: #7C3AED; }
+
+    .task-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .task-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .task-category { padding: 4px 10px; background: #f0edff; color: #7C3AED; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .task-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .task-title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
+    .task-price { font-size: 17px; font-weight: 700; color: #10b981; }
+    .task-desc { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
+    .task-meta { display: flex; gap: 16px; font-size: 12px; color: #6b7280; margin-bottom: 12px; flex-wrap: wrap; }
+    .task-actions { display: flex; gap: 8px; }
+    .btn-apply { flex: 1; padding: 10px; background: #7C3AED; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-apply:disabled { background: #d1d5db; cursor: not-allowed; }
+    .btn-chat { padding: 10px 14px; background: #f3f4f6; color: #7C3AED; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0 12px; border-top: 1px solid #e5e7eb; z-index: 50; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #9ca3af; cursor: pointer; padding: 4px 12px; border: none; background: none; }
+    .nav-item.active { color: #7C3AED; }
+    .nav-item .nav-icon { font-size: 22px; }
+
+    .fab { position: fixed; bottom: 80px; right: 20px; padding: 14px 20px; background: #7C3AED; color: white; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(124,58,237,.4); display: flex; align-items: center; gap: 8px; z-index: 100; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 20px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+    .modal input, .modal textarea { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .modal-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .modal-category { padding: 6px 14px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 12px; cursor: pointer; }
+    .modal-category.selected { background: #7C3AED; color: white; border-color: #7C3AED; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .modal-actions .btn-cancel { background: #f3f4f6; color: #374151; }
+    .modal-actions .btn-submit { background: #7C3AED; color: white; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+    .profile-card { background: white; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 16px; }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #7C3AED; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; margin: 0 auto 12px; }
+    .profile-name { font-size: 20px; font-weight: 700; }
+    .profile-rating { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+    .profile-stat { display: flex; align-items: center; gap: 4px; font-size: 14px; color: #6b7280; }
+
+    /* ===== CHAT ===== */
+    .chat-list-item { background: white; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+    .chat-list-item:hover { background: #faf8ff; }
+    .chat-avatar { width: 44px; height: 44px; border-radius: 50%; background: #7C3AED; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; flex-shrink: 0; }
+    .chat-list-body { flex: 1; min-width: 0; }
+    .chat-list-name { font-weight: 600; font-size: 15px; color: #1a1a2e; }
+    .chat-list-last { font-size: 13px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .chat-list-time { font-size: 11px; color: #9ca3af; flex-shrink: 0; }
+
+    .chat-modal { display: flex; flex-direction: column; height: 80vh; max-height: 700px; padding: 0; overflow: hidden; }
+    .chat-header { background: #7C3AED; color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+    .chat-header .chat-back { background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; }
+    .chat-header .chat-title { flex: 1; font-weight: 600; font-size: 16px; }
+    .chat-header .chat-close { background: transparent; border: none; color: white; font-size: 22px; cursor: pointer; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #f5f5f5; }
+    .chat-msg { max-width: 78%; padding: 10px 14px; border-radius: 16px; margin-bottom: 10px; font-size: 14px; line-height: 1.35; word-wrap: break-word; }
+    .chat-msg.me { background: #7C3AED; color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+    .chat-msg.other { background: white; color: #1a1a2e; margin-right: auto; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .chat-msg .chat-time { font-size: 10px; opacity: .7; margin-top: 4px; display: block; }
+    .chat-input-row { display: flex; padding: 10px; gap: 8px; background: white; border-top: 1px solid #e5e7eb; }
+    .chat-input-row input { flex: 1; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 24px; font-size: 14px; outline: none; background: #f9fafb; }
+    .chat-input-row input:focus { border-color: #7C3AED; background: white; }
+    .chat-input-row button { width: 46px; height: 46px; border-radius: 50%; border: none; background: #7C3AED; color: white; font-size: 18px; cursor: pointer; }
+    .chat-input-row button:disabled { background: #d1d5db; cursor: not-allowed; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty-state .title { font-size: 17px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+
+    @media (max-width: 480px) { body { padding: 12px; } }
+    @media (min-width: 768px) { body { max-width: 600px; margin: 0 auto; } }
+  </style>
+</head>
+<body>
+
+<!-- ===== SPLASH ===== -->
+<div class="splash" id="splashScreen">
+  <div class="logo-circle">🧑‍💻</div>
+  <div class="app-name">TeenWork</div>
+  <div class="app-subtitle">Работа для подростков</div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<!-- ===== AUTH ===== -->
+<div class="auth-container" id="authContainer">
+  <div class="auth-card">
+    <h2 id="authTitle">Вход в TeenWork</h2>
+    <div class="subtitle" id="authSubtitle">Войдите в свой аккаунт</div>
+    <div class="error" id="authError"></div>
+    <div class="info" id="authInfo"></div>
+    <input id="authName" placeholder="Имя" style="display:none;">
+    <input id="authEmail" placeholder="Email" type="email">
+    <input id="authPassword" placeholder="Пароль" type="password">
+    <div class="forgot-link" id="forgotRow">
+      <span onclick="resetPassword()">Забыли пароль?</span>
+    </div>
+    <button class="btn-primary" id="authBtn" onclick="handleAuth()">Войти</button>
+    <div class="switch-link">
+      <span id="switchText">Нет аккаунта? <span onclick="toggleAuth()">Зарегистрироваться</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TERMS ===== -->
+<div class="terms-container" id="termsContainer">
+  <div class="terms-card">
+    <h2>📋 Правила TeenWork</h2>
+    <div class="rule"><div class="title">1. Регистрация</div><div class="desc">При регистрации вы обязуетесь указывать достоверные данные.</div></div>
+    <div class="rule"><div class="title">2. Честность</div><div class="desc">Исполнитель обязуется выполнять работу качественно и в срок.</div></div>
+    <div class="rule"><div class="title">3. Безопасность</div><div class="desc">Запрещено передавать личные данные другим пользователям.</div></div>
+    <div class="rule"><div class="title">4. Оплата</div><div class="desc">Аванс 20% до начала работы, остаток 80% после выполнения.</div></div>
+    <div class="rule important"><div class="title">5. ОТВЕТСТВЕННОСТЬ</div><div class="desc">TeenWork не несёт ответственности за качество выполнения заказов, а также за любые споры между пользователями. Все претензии решаются между заказчиком и исполнителем напрямую.</div></div>
+    <div class="rule"><div class="title">6. Запрещено</div><div class="desc">Мошенничество, грубость, спам, распространение вредоносного ПО.</div></div>
+    <button class="btn-accept" onclick="acceptTerms()">✅ Я принимаю правила</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app-container" id="appContainer">
+
+  <div class="header">
+    <h1>🧑‍💻 TeenWork</h1>
+    <button class="logout-btn" onclick="logout()">Выйти</button>
+  </div>
+
+  <!-- HOME -->
+  <div id="homeSection">
+    <div class="search-bar">
+      <input id="searchInput" placeholder="Поиск по заданиям..." oninput="filterTasks()">
+      <button class="filter-btn" onclick="openFilterModal()">🔍</button>
+    </div>
+    <div class="tabs" id="tabsContainer">
+      <button class="tab active" data-tab="all" onclick="switchTab('all')">Все</button>
+      <button class="tab" data-tab="recommended" onclick="switchTab('recommended')">Рекомендованные</button>
+    </div>
+    <div id="tasksContainer"></div>
+    <button class="fab" onclick="openAddModal()">➕ Создать задание</button>
+  </div>
+
+  <!-- CHATS -->
+  <div class="page" id="pageChats">
+    <div id="chatsContainer"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="page" id="pageProfile">
+    <div class="profile-card">
+      <div class="profile-avatar">👤</div>
+      <div class="profile-name" id="profileName">Пользователь</div>
+      <div class="profile-rating">
+        <span class="profile-stat">⭐ <span id="profileRating">0.0</span></span>
+        <span class="profile-stat">✅ <span id="profileTasks">0</span> заданий</span>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button style="padding:14px; background:#7C3AED; color:white; border:none; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer;" onclick="switchNav('myResponses')">📋 Мои отклики</button>
+      <button style="padding:14px; background:#6b7280; color:white; border:none; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer;" onclick="alert('💬 Чат с поддержкой')">💬 Поддержка</button>
+    </div>
+  </div>
+
+  <!-- MY RESPONSES -->
+  <div class="page" id="pageMyResponses">
+    <div id="myResponsesContainer"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item active" data-nav="home" onclick="switchNav('home')">
+      <span class="nav-icon">🏠</span><span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-nav="chat" onclick="switchNav('chat')">
+      <span class="nav-icon">💬</span><span class="nav-label">Чаты</span>
+    </button>
+    <button class="nav-item" data-nav="profile" onclick="switchNav('profile')">
+      <span class="nav-icon">👤</span><span class="nav-label">Профиль</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- ===== ADD TASK MODAL ===== -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">➕ Новое задание</div>
+    <input id="taskTitle" placeholder="Название задания *">
+    <input id="taskPrice" placeholder="Цена *" type="number">
+    <textarea id="taskDesc" placeholder="Описание"></textarea>
+    <input id="taskDeadline" placeholder="Срок выполнения">
+    <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Категории:</div>
+    <div class="modal-categories" id="modalCategories"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Отмена</button>
+      <button class="btn-submit" onclick="addTask()">Опубликовать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FILTER MODAL ===== -->
+<div class="modal-overlay" id="filterModal">
+  <div class="modal">
+    <div class="modal-title">🔍 Фильтр</div>
+    <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Выберите категории:</div>
+    <div class="modal-categories" id="filterCategories"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeFilterModal()">Закрыть</button>
+      <button class="btn-submit" onclick="applyFilter()">Применить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESPONSES MODAL ===== -->
+<div class="modal-overlay" id="responsesModal">
+  <div class="modal">
+    <div class="modal-title" id="responsesTitle">Отклики</div>
+    <div id="responsesList"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeResponsesModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CHAT MODAL ===== -->
+<div class="modal-overlay" id="chatModal">
+  <div class="modal chat-modal">
+    <div class="chat-header">
+      <button class="chat-back" onclick="closeChatModal()">←</button>
+      <div class="chat-title" id="chatTitle">Чат</div>
+      <button class="chat-close" onclick="closeChatModal()">✕</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage();">
+      <button id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 1. FIREBASE
+// ============================================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC-iQlfApMYsg8vOw7Xtkub_6dTDVAjE5Y",
+  authDomain: "teenwork-e02f2.firebaseapp.com",
+  projectId: "teenwork-e02f2",
+  storageBucket: "teenwork-e02f2.firebasestorage.app",
+  messagingSenderId: "975374727761",
+  appId: "1:975374727761:web:f312ddce7f674fc59f5670"
 };
-addEventListener("message", eventListener);
-`],{type:"application/javascript"})):m(t,p),mainScriptUrlOrBlob:o})};var P=f.supportsWasmGC,k=class{async loadEntrypoint(e){let{serviceWorker:s,...t}=e||{},r=new y,i=new v;i.setTrustedTypesPolicy(r.policy),await i.loadServiceWorker(s).catch(c=>{console.warn("Exception while loading service worker:",c)});let o=new g;return o.setTrustedTypesPolicy(r.policy),this.didCreateEngineInitializer=o.didCreateEngineInitializer.bind(o),o.loadEntrypoint(t)}async load({serviceWorkerSettings:e,onEntrypointLoaded:s,nonce:t,config:r}={}){r??={};let i=_flutter.buildConfig;if(!i)throw"FlutterLoader.load requires _flutter.buildConfig to be set";let o=r.wasmAllowList?.[f.browserEngine]??C[f.browserEngine],c=u=>{switch(u){case"skwasm":return P?f.webGLVersion>0?o?null:`Skwasm is disabled by your wasmAllowList configuration for browser engine "${f.browserEngine}".`:"Skwasm requires WebGL support; this browser does not provide it.":"Skwasm requires WasmGC support; this browser does not implement it yet.";default:return null}},a=u=>u.compileTarget==="dart2wasm"&&!P?"dart2wasm requires WasmGC support; this browser does not implement it yet.":r.renderer&&r.renderer!=u.renderer?`The application is configured to use the "${r.renderer}" renderer; this build targets "${u.renderer}".`:c(u.renderer),l,p=[];for(let u of i.builds){let S=a(u);if(S===null){l=u;break}p.push({candidate:u,reason:S})}if(r.verboseBuildSelection)for(let u of p)console.warn(`Flutter Web: build ${u.candidate.compileTarget}/${u.candidate.renderer} was skipped: ${u.reason}`);if(!l)throw console.warn("Flutter Web: no compatible build found for this browser."+(r.verboseBuildSelection?"":" Set `verboseBuildSelection: true` in your Flutter configuration to see why each candidate was rejected.")),new Error("FlutterLoader could not find a build compatible with configuration and environment.");let d={};d.flutterTT=new y,e&&(d.serviceWorkerLoader=new v,d.serviceWorkerLoader.setTrustedTypesPolicy(d.flutterTT.policy),await d.serviceWorkerLoader.loadServiceWorker(e).catch(u=>{console.warn("Exception while loading service worker:",u)}));let h=_(r,i);l.renderer==="canvaskit"?d.canvasKit=I(d,r,f,h):l.renderer==="skwasm"&&(d.skwasm=U(d,r,f,h));let w=new g;return w.setTrustedTypesPolicy(d.flutterTT.policy),this.didCreateEngineInitializer=w.didCreateEngineInitializer.bind(w),w.load(l,d,r,t,s)}};window._flutter||(window._flutter={});window._flutter.loader||(window._flutter.loader=new k);})();
-//# sourceMappingURL=flutter.js.map
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+console.log('✅ Firebase подключен!');
+
+// ============================================================
+// 2. СОСТОЯНИЕ
+// ============================================================
+
+let tasks = [];
+let chats = [];
+let currentTab = 'all';
+let currentNav = 'home';
+let filterCategories = [];
+let currentUser = null;
+let userName = '';
+let currentChatId = null;
+let currentChatUnsub = null;
+let chatsUnsub = null;
+
+const allCategories = [
+  'Написание текстов', 'Рерайт статей', 'Придумать слоган', 'Написание отзывов',
+  'Составление списков', 'Транскрибация аудио', 'Расшифровка субтитров',
+  'Дизайн в Canva', 'Оформление обложек', 'Подбор стоковых фото', 'Создание мемов',
+  'Посты для соцсетей', 'Ответы на комментарии', 'Подбор хэштегов',
+  'Помощь с уроками', 'Проверка ДЗ', 'Составление конспектов',
+  'Перевод текстов', 'Проверка перевода'
+];
+
+// ============================================================
+// 3. АУТЕНТИФИКАЦИЯ
+// ============================================================
+
+let isLogin = true;
+let authLoading = false;
+
+function toggleAuth() {
+  isLogin = !isLogin;
+  document.getElementById('authTitle').textContent = isLogin ? 'Вход в TeenWork' : 'Регистрация';
+  document.getElementById('authSubtitle').textContent = isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт';
+  document.getElementById('authName').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('switchText').innerHTML = isLogin ?
+    'Нет аккаунта? <span onclick="toggleAuth()">Зарегистрироваться</span>' :
+    'Уже есть аккаунт? <span onclick="toggleAuth()">Войти</span>';
+  document.getElementById('forgotRow').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('authError').classList.remove('show');
+  document.getElementById('authInfo').classList.remove('show');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value.trim();
+  const name = document.getElementById('authName').value.trim();
+  const errorEl = document.getElementById('authError');
+  const infoEl = document.getElementById('authInfo');
+
+  errorEl.classList.remove('show');
+  infoEl.classList.remove('show');
+
+  if (!email || !password) {
+    errorEl.textContent = 'Заполните все поля';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  if (!isLogin && !name) {
+    errorEl.textContent = 'Введите имя';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  authLoading = true;
+  document.getElementById('authBtn').disabled = true;
+  document.getElementById('authBtn').textContent = '⏳ Загрузка...';
+
+  try {
+    if (isLogin) {
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      const result = await auth.createUserWithEmailAndPassword(email, password);
+      await result.user.updateProfile({ displayName: name });
+      await db.collection('users').doc(result.user.uid).set({
+        name: name,
+        email: email,
+        rating: 0,
+        completedTasks: 0,
+        createdAt: new Date().toISOString()
+      });
+    }
+    document.getElementById('authContainer').classList.remove('active');
+  } catch (err) {
+    let msg = 'Ошибка';
+    if (err.code === 'auth/user-not-found') msg = 'Пользователь не найден';
+    else if (err.code === 'auth/wrong-password') msg = 'Неверный пароль';
+    else if (err.code === 'auth/invalid-credential') msg = 'Неверный email или пароль';
+    else if (err.code === 'auth/email-already-in-use') msg = 'Эта почта уже используется';
+    else if (err.code === 'auth/weak-password') msg = 'Слабый пароль (минимум 6 символов)';
+    else if (err.code === 'auth/invalid-email') msg = 'Неверный формат почты';
+    else msg = err.message;
+    errorEl.textContent = msg;
+    errorEl.classList.add('show');
+    authLoading = false;
+    document.getElementById('authBtn').disabled = false;
+    document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+  }
+}
+
+// === ВОССТАНОВЛЕНИЕ ПАРОЛЯ ===
+async function resetPassword() {
+  const email = document.getElementById('authEmail').value.trim();
+  const errorEl = document.getElementById('authError');
+  const infoEl = document.getElementById('authInfo');
+
+  errorEl.classList.remove('show');
+  infoEl.classList.remove('show');
+
+  if (!email) {
+    errorEl.textContent = 'Введите email, указанный при регистрации';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  // Простая проверка формата
+  const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if (!emailRegex.test(email)) {
+    errorEl.textContent = 'Неверный формат email';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(email);
+    infoEl.textContent = `📧 Письмо для восстановления пароля отправлено на ${email}. Проверьте почту (и папку «Спам»).`;
+    infoEl.classList.add('show');
+  } catch (err) {
+    let msg = 'Не удалось отправить письмо';
+    if (err.code === 'auth/user-not-found') msg = 'Пользователь с таким email не найден';
+    else if (err.code === 'auth/invalid-email') msg = 'Неверный формат email';
+    else if (err.code === 'auth/too-many-requests') msg = 'Слишком много попыток. Попробуйте позже';
+    errorEl.textContent = msg;
+    errorEl.classList.add('show');
+  }
+}
+
+function logout() {
+  if (chatsUnsub) { chatsUnsub(); chatsUnsub = null; }
+  if (currentChatUnsub) { currentChatUnsub(); currentChatUnsub = null; }
+  auth.signOut();
+  document.getElementById('authContainer').classList.add('active');
+  document.getElementById('appContainer').classList.remove('active');
+  document.getElementById('termsContainer').classList.remove('active');
+}
+
+// ============================================================
+// 4. ПРАВИЛА
+// ============================================================
+
+function acceptTerms() {
+  if (currentUser) {
+    db.collection('users').doc(currentUser.uid).set({
+      name: userName,
+      email: currentUser.email,
+      rating: 0,
+      completedTasks: 0,
+      termsAccepted: true,
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+  }
+  document.getElementById('termsContainer').classList.remove('active');
+  document.getElementById('appContainer').classList.add('active');
+  loadTasks();
+  startChatsListener();
+}
+
+// ============================================================
+// 5. AUTH STATE
+// ============================================================
+
+auth.onAuthStateChanged(user => {
+  const splash = document.getElementById('splashScreen');
+  const authContainer = document.getElementById('authContainer');
+  const termsContainer = document.getElementById('termsContainer');
+  const appContainer = document.getElementById('appContainer');
+
+  splash.classList.add('hidden');
+  setTimeout(() => { splash.style.display = 'none'; }, 800);
+
+  if (user) {
+    currentUser = user;
+    userName = user.displayName || 'Пользователь';
+    document.getElementById('profileName').textContent = userName;
+    authContainer.classList.remove('active');
+
+    db.collection('users').doc(user.uid).get().then(doc => {
+      if (doc.exists && doc.data().termsAccepted) {
+        termsContainer.classList.remove('active');
+        appContainer.classList.add('active');
+        loadTasks();
+        startChatsListener();
+      } else {
+        termsContainer.classList.add('active');
+        appContainer.classList.remove('active');
+      }
+    }).catch(() => {
+      termsContainer.classList.add('active');
+      appContainer.classList.remove('active');
+    });
+  } else {
+    currentUser = null;
+    authContainer.classList.add('active');
+    appContainer.classList.remove('active');
+    termsContainer.classList.remove('active');
+    document.getElementById('authBtn').disabled = false;
+    document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+    tasks = [];
+    chats = [];
+    renderTasks();
+    renderChats();
+  }
+});
+
+// ============================================================
+// 6. ЗАДАНИЯ
+// ============================================================
+
+async function loadTasks() {
+  try {
+    const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
+    tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderTasks();
+  } catch (error) {
+    console.warn('⚠️ Ошибка загрузки из Firebase:', error);
+    tasks = [];
+    renderTasks();
+  }
+}
+
+function getFilteredTasks() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  let filtered = tasks;
+  if (search) filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(search));
+  if (filterCategories.length) filtered = filtered.filter(t => (t.categories || []).some(c => filterCategories.includes(c)));
+  if (currentTab === 'recommended') {
+    const interests = ['Тексты', 'Дизайн', 'Соцсети', 'Монтаж', 'Учёба', 'Переводы'];
+    filtered = filtered.filter(t => (t.categories || []).some(c => interests.some(i => c.includes(i) || i.includes(c))));
+  }
+  return filtered;
+}
+
+function renderTasks() {
+  const container = document.getElementById('tasksContainer');
+  const filtered = getFilteredTasks();
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div><div class="title">Нет заданий</div><div>Создайте первое задание!</div></div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(task => {
+    const isMyTask = currentUser && task.authorId === currentUser.uid;
+    const myResponse = (task.responses || []).find(r => r.executorId === (currentUser && currentUser.uid));
+    const hasResponses = (task.responses || []).length > 0;
+
+    let buttons = '';
+
+    if (isMyTask) {
+      // Автор задачи: смотрит отклики + быстрый чат с первым/принятым исполнителем
+      const targetResp = (task.responses || []).find(r => r.status === 'accepted') || (task.responses || [])[0];
+      buttons = `
+        <button class="btn-apply" disabled>Моё задание</button>
+        ${hasResponses ? `<button class="btn-chat" onclick="openResponsesModal('${task.id}')" title="Отклики">📋 ${(task.responses || []).length}</button>` : ''}
+        ${targetResp ? `<button class="btn-chat" onclick="openChatWith('${targetResp.executorId}','${escapeQuotes(targetResp.executor)}')" title="Чат с исполнителем">💬</button>` : ''}
+      `;
+    } else {
+      // Исполнитель
+      buttons = `
+        <button class="btn-apply" ${myResponse ? 'disabled' : ''} onclick="applyForTask('${task.id}')">${myResponse ? 'Вы откликнулись' : 'Откликнуться'}</button>
+        <button class="btn-chat" onclick="openChatWith('${task.authorId}','${escapeQuotes(task.author)}')" title="Написать автору">💬</button>
+      `;
+    }
+
+    return `
+      <div class="task-card">
+        <div class="task-categories">${(task.categories || []).map(c => `<span class="task-category">${c}</span>`).join('')}</div>
+        <div class="task-title-row"><span class="task-title">${task.title}</span><span class="task-price">${task.price} ₽</span></div>
+        <div class="task-desc">${task.description || ''}</div>
+        <div class="task-meta">
+          <span>👤 ${task.author}</span>
+          <span>⭐ ${task.rating}</span>
+          <span>⏱ ${task.deadline}</span>
+        </div>
+        <div class="task-actions">${buttons}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeQuotes(s) {
+  return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// 7. ОТКЛИК
+// ============================================================
+
+async function applyForTask(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task || !currentUser) return;
+  if ((task.responses || []).some(r => r.executorId === currentUser.uid)) {
+    alert('⚠️ Вы уже откликнулись на это задание');
+    return;
+  }
+  const newResponse = {
+    executor: userName,
+    executorId: currentUser.uid,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  const responses = [...(task.responses || []), newResponse];
+  try {
+    await db.collection('tasks').doc(task.id).update({ responses });
+    task.responses = responses;
+    renderTasks();
+    alert('✅ Отклик отправлен! Ждите ответа от ' + task.author);
+  } catch (error) {
+    console.error(error);
+    alert('❌ Ошибка отправки отклика');
+  }
+}
+
+// ============================================================
+// 8. МОДАЛКА ОТКЛИКОВ (для автора задачи)
+// ============================================================
+
+function openResponsesModal(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  document.getElementById('responsesTitle').textContent = `Отклики на "${task.title}"`;
+  const list = document.getElementById('responsesList');
+  if (!(task.responses || []).length) {
+    list.innerHTML = `<div style="color:#6b7280; padding:12px 0;">Пока нет откликов</div>`;
+  } else {
+    list.innerHTML = task.responses.map(r => `
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #eee;">
+        <div class="chat-avatar">${(r.executor || '?')[0].toUpperCase()}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600;">${r.executor}</div>
+          <div style="font-size:12px; color:#6b7280;">
+            ${r.status === 'accepted' ? '✅ Принят' : r.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает'}
+          </div>
+        </div>
+        <button class="btn-chat" onclick="openChatWith('${r.executorId}','${escapeQuotes(r.executor)}')" title="Написать">💬</button>
+        ${r.status === 'pending' ? `
+          <button class="btn-chat" style="color:#10b981;" onclick="setResponseStatus('${task.id}','${r.executorId}','accepted')" title="Принять">✅</button>
+          <button class="btn-chat" style="color:#ef4444;" onclick="setResponseStatus('${task.id}','${r.executorId}','rejected')" title="Отклонить">❌</button>
+        ` : ''}
+      </div>
+    `).join('');
+  }
+  document.getElementById('responsesModal').classList.add('show');
+}
+
+function closeResponsesModal() {
+  document.getElementById('responsesModal').classList.remove('show');
+}
+
+async function setResponseStatus(taskId, executorId, status) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const updated = (task.responses || []).map(r =>
+    r.executorId === executorId ? { ...r, status } : r
+  );
+  try {
+    await db.collection('tasks').doc(taskId).update({ responses: updated });
+    task.responses = updated;
+    renderTasks();
+    openResponsesModal(taskId); // перерисовать
+  } catch (e) {
+    alert('❌ Ошибка обновления статуса');
+  }
+}
+
+// ============================================================
+// 9. ЧАТЫ
+// ============================================================
+
+function startChatsListener() {
+  if (!currentUser) return;
+  if (chatsUnsub) chatsUnsub();
+
+  chatsUnsub = db.collection('chats')
+    .where('participants', 'array-contains', currentUser.uid)
+    .onSnapshot(snapshot => {
+      chats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Сортировка по lastUpdated (в памяти, чтобы не требовать индекс)
+      chats.sort((a, b) => {
+        const ta = a.lastUpdated?.toMillis ? a.lastUpdated.toMillis() : 0;
+        const tb = b.lastUpdated?.toMillis ? b.lastUpdated.toMillis() : 0;
+        return tb - ta;
+      });
+      renderChats();
+    }, err => {
+      console.warn('⚠️ Ошибка слушателя чатов:', err);
+    });
+}
+
+function renderChats() {
+  const container = document.getElementById('chatsContainer');
+  if (!container) return;
+  if (!chats.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">💬</div>
+        <div class="title">Здесь будут ваши чаты</div>
+        <div>Откликнитесь на задание или напишите автору, чтобы начать общение</div>
+      </div>`;
+    return;
+  }
+  container.innerHTML = chats.map(chat => {
+    const otherId = (chat.participants || []).find(id => id !== currentUser.uid);
+    const otherName = (chat.participantNames && chat.participantNames[otherId]) || 'Пользователь';
+    const last = (chat.messages || []).slice(-1)[0];
+    const lastText = last ? last.text : 'Нет сообщений';
+    const time = last?.time ? formatTime(new Date(last.time)) : '';
+    return `
+      <div class="chat-list-item" onclick="openChatById('${chat.id}')">
+        <div class="chat-avatar">${(otherName || '?')[0].toUpperCase()}</div>
+        <div class="chat-list-body">
+          <div class="chat-list-name">${otherName}</div>
+          <div class="chat-list-last">${lastText}</div>
+        </div>
+        <div class="chat-list-time">${time}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Открыть/создать чат с пользователем [otherUid]
+async function openChatWith(otherUid, otherName) {
+  if (!currentUser) { alert('Войдите, чтобы писать'); return; }
+  if (!otherUid || otherUid === 'unknown') {
+    alert('❌ Не удалось определить пользователя для чата');
+    return;
+  }
+  if (otherUid === currentUser.uid) {
+    alert('Это ваш собственный чат');
+    return;
+  }
+
+  try {
+    // Ищем существующий чат
+    const snap = await db.collection('chats')
+      .where('participants', 'array-contains', currentUser.uid)
+      .get();
+
+    let chatDoc = null;
+    snap.forEach(doc => {
+      const p = doc.data().participants || [];
+      if (p.includes(otherUid) && p.includes(currentUser.uid)) chatDoc = doc;
+    });
+
+    if (!chatDoc) {
+      // Создаём новый
+      const ref = await db.collection('chats').add({
+        participants: [currentUser.uid, otherUid],
+        participantNames: {
+          [currentUser.uid]: userName,
+          [otherUid]: otherName
+        },
+        messages: [],
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      openChatById(ref.id);
+    } else {
+      openChatById(chatDoc.id);
+    }
+  } catch (e) {
+    console.error(e);
+    alert('❌ Ошибка открытия чата');
+  }
+}
+
+// Открыть чат по id (используется и из списка, и после создания)
+function openChatById(chatId) {
+  currentChatId = chatId;
+  document.getElementById('responsesModal').classList.remove('show');
+  document.getElementById('chatModal').classList.add('show');
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatMessages').innerHTML =
+    `<div style="text-align:center; color:#9ca3af; font-size:13px;">Загрузка…</div>`;
+
+  if (currentChatUnsub) currentChatUnsub();
+  currentChatUnsub = db.collection('chats').doc(chatId).onSnapshot(doc => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    const otherId = (data.participants || []).find(id => id !== currentUser.uid);
+    const otherName = (data.participantNames && data.participantNames[otherId]) || 'Пользователь';
+    document.getElementById('chatTitle').textContent = otherName;
+
+    const messages = data.messages || [];
+    const box = document.getElementById('chatMessages');
+    if (!messages.length) {
+      box.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:20px;">Нет сообщений. Напишите первым!</div>`;
+    } else {
+      box.innerHTML = messages.map(m => {
+        const isMe = m.senderId === currentUser.uid;
+        return `
+          <div class="chat-msg ${isMe ? 'me' : 'other'}">
+            ${escapeHtml(m.text)}
+            <span class="chat-time">${formatTime(new Date(m.time))}</span>
+          </div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+  });
+}
+
+function closeChatModal() {
+  document.getElementById('chatModal').classList.remove('show');
+  if (currentChatUnsub) { currentChatUnsub(); currentChatUnsub = null; }
+  currentChatId = null;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !currentChatId || !currentUser) return;
+
+  const msg = {
+    id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    text,
+    senderId: currentUser.uid,
+    time: new Date().toISOString()
+  };
+
+  input.value = '';
+  try {
+    await db.collection('chats').doc(currentChatId).update({
+      messages: firebase.firestore.FieldValue.arrayUnion(msg),
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    console.error(e);
+    alert('❌ Не удалось отправить сообщение');
+  }
+}
+
+// ============================================================
+// 10. МОИ ОТКЛИКИ
+// ============================================================
+
+function renderMyResponses() {
+  const container = document.getElementById('myResponsesContainer');
+  if (!container) return;
+  const mine = [];
+  tasks.forEach(task => {
+    (task.responses || []).forEach(r => {
+      if (r.executorId === (currentUser && currentUser.uid)) {
+        mine.push({ task, response: r });
+      }
+    });
+  });
+
+  if (!mine.length) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">📭</div><div class="title">Вы ещё не откликнулись</div><div>Найдите интересное задание на главной</div></div>`;
+    return;
+  }
+
+  container.innerHTML = mine.map(({ task, response }) => `
+    <div class="task-card">
+      <div class="task-title-row">
+        <span class="task-title">${task.title}</span>
+        <span class="task-price">${task.price} ₽</span>
+      </div>
+      <div class="task-meta">
+        <span>👤 ${task.author}</span>
+        <span>${response.status === 'accepted' ? '✅ Принят' : response.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает'}</span>
+      </div>
+      <div class="task-actions">
+        <button class="btn-apply" onclick="openChatWith('${task.authorId}','${escapeQuotes(task.author)}')">💬 Написать автору</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// 11. ВСПОМОГАТЕЛЬНЫЕ
+// ============================================================
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  renderTasks();
+}
+
+function switchNav(nav) {
+  currentNav = nav;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navBtn = document.querySelector(`.nav-item[data-nav="${nav}"]`);
+  if (navBtn) navBtn.classList.add('active');
+
+  document.getElementById('homeSection').style.display = nav === 'home' ? 'block' : 'none';
+  document.getElementById('pageChats').style.display = nav === 'chat' ? 'block' : 'none';
+  document.getElementById('pageProfile').style.display = nav === 'profile' ? 'block' : 'none';
+  document.getElementById('pageMyResponses').style.display = nav === 'myResponses' ? 'block' : 'none';
+
+  if (nav === 'home') renderTasks();
+  if (nav === 'chat') renderChats();
+  if (nav === 'myResponses') renderMyResponses();
+}
+
+function filterTasks() { renderTasks(); }
+
+function openAddModal() {
+  document.getElementById('addModal').classList.add('show');
+  renderCategoryChips('modalCategories');
+}
+function closeAddModal() { document.getElementById('addModal').classList.remove('show'); }
+
+function openFilterModal() {
+  document.getElementById('filterModal').classList.add('show');
+  renderCategoryChips('filterCategories');
+}
+function closeFilterModal() { document.getElementById('filterModal').classList.remove('show'); }
+
+function renderCategoryChips(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = allCategories.map(c => `<span class="modal-category" onclick="toggleCategory(this)">${c}</span>`).join('');
+}
+function toggleCategory(el) { el.classList.toggle('selected'); }
+function getSelectedCategories(containerId) {
+  return Array.from(document.getElementById(containerId).querySelectorAll('.selected')).map(el => el.textContent);
+}
+
+function applyFilter() {
+  filterCategories = getSelectedCategories('filterCategories');
+  closeFilterModal();
+  renderTasks();
+}
+
+function formatTime(date) {
+  if (!(date instanceof Date) || isNaN(date)) return '';
+  const now = new Date();
+  const diff = now - date;
+  if (diff < 86400000 && now.getDate() === date.getDate()) {
+    return date.getHours().toString().padStart(2, '0') + ':' +
+           date.getMinutes().toString().padStart(2, '0');
+  } else if (diff < 172800000) {
+    return 'Вчера';
+  } else {
+    return date.getDate() + '.' + (date.getMonth() + 1);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// ============================================================
+// 12. СОЗДАНИЕ ЗАДАНИЯ
+// ============================================================
+
+async function addTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  const price = parseInt(document.getElementById('taskPrice').value.trim());
+  const desc = document.getElementById('taskDesc').value.trim();
+  const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
+  const categories = getSelectedCategories('modalCategories');
+
+  if (!title) { alert('Введите название задания'); return; }
+  if (!price || isNaN(price)) { alert('Введите корректную цену'); return; }
+  if (!categories.length) { alert('Выберите хотя бы одну категорию'); return; }
+
+  const newTask = {
+    title, categories, price,
+    description: desc || 'Без описания',
+    deadline,
+    author: userName || 'Пользователь',
+    authorId: currentUser ? currentUser.uid : 'unknown',
+    rating: 5.0,
+    responses: [],
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    const docRef = await db.collection('tasks').add({
+      ...newTask,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    tasks.unshift({ id: docRef.id, ...newTask });
+    renderTasks();
+    closeAddModal();
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskPrice').value = '';
+    document.getElementById('taskDesc').value = '';
+    document.getElementById('taskDeadline').value = '';
+    document.getElementById('modalCategories').querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+    alert('✅ Задание опубликовано!');
+  } catch (error) {
+    alert('❌ Ошибка сохранения. Проверьте подключение.');
+    console.error(error);
+  }
+}
+</script>
+</body>
+</html>
