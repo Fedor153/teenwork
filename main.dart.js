@@ -264,6 +264,30 @@ class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  /// Единая логика определения имени собеседника.
+  /// Порядок:
+  ///   1) participantNames[interlocutorId]  — актуальный формат;
+  ///   2) interlocutorName на верхнем уровне — legacy-чаты;
+  ///   3) 'Пользователь' — заглушка.
+  /// Пустые строки и пробелы игнорируются.
+  String _resolveInterlocutorName(
+    Map<String, dynamic> data,
+    String interlocutorId,
+  ) {
+    final names = Map<String, dynamic>.from(data['participantNames'] ?? {});
+    final fromMap = names[interlocutorId]?.toString();
+    if (fromMap != null && fromMap.trim().isNotEmpty) {
+      return fromMap.trim();
+    }
+
+    final legacy = data['interlocutorName']?.toString();
+    if (legacy != null && legacy.trim().isNotEmpty) {
+      return legacy.trim();
+    }
+
+    return 'Пользователь';
+  }
+
   Stream<List<Chat>> watchChats() {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return Stream.value([]);
@@ -289,16 +313,15 @@ class ChatService {
             final interlocutorId = (data['participants'] as List? ?? [])
                 .firstWhere((id) => id != userId, orElse: () => '');
 
-            // Для отображения берём имя собеседника из chats (оно там всегда
-            // сохранено как interlocutorName). Если чат создан «наоборот»,
-            // то есть автор задачи инициирует общение с исполнителем,
-            // в поле interlocutorName тоже записано корректное имя.
+            final displayName =
+                _resolveInterlocutorName(data, interlocutorId);
+
             final topic = AIService.detectChatTopic(
                 messages.map((m) => m.text).toList());
 
             return Chat(
               id: doc.id,
-              interlocutor: data['interlocutorName'] ?? 'Пользователь',
+              interlocutor: displayName,
               interlocutorId: interlocutorId,
               messages: messages,
               lastUpdated:
@@ -310,9 +333,7 @@ class ChatService {
   }
 
   /// Возвращает существующий чат с [interlocutorId] или создаёт новый.
-  /// Поле interlocutorName сохраняется от лица того, кто в данный момент
-  /// открывает чат, но в UI отображается имя собеседника. Для корректного
-  /// отображения у обеих сторон используется отдельное поле participantsNames.
+  /// Имена обеих сторон сохраняются в participantNames: {uid: name}.
   Future<Chat> getOrCreateChat(
       String interlocutorId, String interlocutorName) async {
     final userId = _auth.currentUser?.uid;
@@ -340,11 +361,8 @@ class ChatService {
                 ))
             .toList();
 
-        // Определяем корректное имя собеседника именно для текущего userId.
-        final names = Map<String, dynamic>.from(data['participantNames'] ?? {});
-        final displayName = names[interlocutorId]?.toString() ??
-            data['interlocutorName'] ??
-            interlocutorName;
+        final displayName =
+            _resolveInterlocutorName(data, interlocutorId);
 
         final topic =
             AIService.detectChatTopic(messages.map((m) => m.text).toList());
@@ -401,10 +419,7 @@ class ChatService {
       final interlocutorId = (data['participants'] as List? ?? [])
           .firstWhere((id) => id != userId, orElse: () => '');
 
-      final names = Map<String, dynamic>.from(data['participantNames'] ?? {});
-      final displayName = names[interlocutorId]?.toString() ??
-          data['interlocutorName'] ??
-          'Пользователь';
+      final displayName = _resolveInterlocutorName(data, interlocutorId);
 
       final topic =
           AIService.detectChatTopic(messages.map((m) => m.text).toList());
@@ -888,7 +903,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Простая валидация формата email.
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
     if (!emailRegex.hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -999,7 +1013,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       obscureText: true,
                     ),
-                    // Кнопка "Забыл пароль?" — всегда видна на экране входа.
                     if (_isLogin)
                       Align(
                         alignment: Alignment.centerRight,
@@ -1574,7 +1587,6 @@ class _MyResponsesScreenState extends State<MyResponsesScreen> {
     }
   }
 
-  /// Открывает (или создаёт) чат с автором задания.
   Future<void> _openChatWithAuthor(Task task) async {
     if (task.authorId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2538,7 +2550,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Открывает (или создаёт) чат с произвольным пользователем.
   Future<void> _openChatWithUser(String uid, String name) async {
     if (uid.isEmpty) {
       if (!mounted) return;
@@ -2570,7 +2581,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  /// Открывает чат с автором задания (для исполнителя).
   Future<void> _openChat(Task task) async {
     await _openChatWithUser(task.authorId, task.author);
   }
@@ -2631,8 +2641,6 @@ class _MainScreenState extends State<MainScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Кнопка "Написать" доступна ВСЕГДА — и автору задачи,
-                    // и до принятия отклика, и после.
                     IconButton(
                       tooltip: 'Написать исполнителю',
                       icon: const Icon(Icons.chat,
@@ -3294,8 +3302,6 @@ class _MainScreenState extends State<MainScreen> {
     final isMyTask = task.authorId == user?.uid;
     final totalResponses = task.responses.length;
 
-    // Для автора задачи — берём первого (или принятого) исполнителя,
-    // чтобы дать быстрый доступ к чату прямо с карточки.
     Response? acceptedResponse;
     if (isMyTask && task.responses.isNotEmpty) {
       acceptedResponse = task.responses.firstWhere(
@@ -3434,14 +3440,12 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Автору задачи: посмотреть отклики.
                 if (isMyTask && totalResponses > 0)
                   IconButton(
                     onPressed: () => _viewResponses(task),
                     icon: const Icon(Icons.people, color: AppColors.primary),
                     tooltip: 'Посмотреть отклики',
                   ),
-                // Автору задачи: быстрый чат с первым/принятым исполнителем.
                 if (isMyTask && acceptedResponse != null)
                   IconButton(
                     tooltip: 'Чат с исполнителем',
@@ -3451,7 +3455,6 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                     icon: const Icon(Icons.chat, color: AppColors.primary),
                   ),
-                // Исполнителю: чат с автором задания.
                 if (!isMyTask)
                   IconButton(
                     onPressed: () => _openChat(task),
