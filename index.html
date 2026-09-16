@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -33,6 +32,7 @@
     --grad-accent: linear-gradient(135deg, #A78BFA 0%, #3B82F6 100%);
     --grad-warm: linear-gradient(135deg, #F59E0B 0%, #EC4899 100%);
     --grad-green: linear-gradient(135deg, #10B981 0%, #3B82F6 100%);
+    --grad-red: linear-gradient(135deg, #F87171 0%, #DC2626 100%);
     --shadow-sm: 0 2px 8px rgba(124,58,237,.08);
     --shadow-md: 0 6px 20px rgba(124,58,237,.15);
     --shadow-lg: 0 12px 32px rgba(124,58,237,.25);
@@ -94,10 +94,9 @@
 
   .app-container { display: none; min-height: 80vh; }
   .app-container.active { display: block; }
-  .header { background: var(--surface); padding: 16px 20px; border-radius: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; }
-  .header h1 { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -.3px; display: flex; align-items: center; gap: 8px; }
+  .header { background: var(--surface); padding: 16px 20px; border-radius: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; }
+  .header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -.3px; display: flex; align-items: center; gap: 8px; }
   .header h1 .brand-emoji { filter: drop-shadow(0 2px 4px rgba(124,58,237,.3)); }
-  .header .logout-btn { padding: 8px 16px; background: linear-gradient(135deg, #F87171 0%, #DC2626 100%); color: white; border: none; border-radius: 10px; font-size: 12px; cursor: pointer; font-weight: 700; font-family: inherit; }
 
   .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
   .search-bar input { flex: 1; padding: 13px 18px; border: 2px solid transparent; border-radius: 14px; font-size: 14px; background: var(--surface); outline: none; font-family: inherit; box-shadow: var(--shadow-sm); transition: all .2s; }
@@ -176,7 +175,7 @@
   .modal-actions button:active { transform: scale(.97); }
   .modal-actions .btn-cancel { background: #F3F4F6; color: #374151; }
   .modal-actions .btn-submit { background: var(--grad-main); color: white; box-shadow: 0 4px 12px rgba(124,58,237,.3); }
-  .modal-actions .btn-danger { background: linear-gradient(135deg, #F87171 0%, #DC2626 100%); color: white; box-shadow: 0 4px 12px rgba(220,38,38,.3); }
+  .modal-actions .btn-danger { background: var(--grad-red); color: white; box-shadow: 0 4px 12px rgba(220,38,38,.3); }
 
   .page { display: none; }
   .page.active { display: block; }
@@ -205,9 +204,11 @@
   .badge .badge-name { font-size: 9px; font-weight: 700; color: var(--text2); line-height: 1.2; }
 
   .profile-actions { display: flex; flex-direction: column; gap: 10px; }
-  .profile-btn { padding: 15px; background: var(--surface); color: var(--text); border: 2px solid var(--divider); border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 10px; transition: all .2s; }
+  .profile-btn { padding: 15px; background: var(--surface); color: var(--text); border: 2px solid var(--divider); border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; }
   .profile-btn:hover { border-color: var(--violet); background: #FAFAFF; }
   .profile-btn.primary { background: var(--grad-main); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(124,58,237,.3); }
+  .profile-btn.danger { background: var(--grad-red); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(220,38,38,.3); }
+  .profile-btn.danger:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(220,38,38,.4); }
 
   .chat-list-item { background: var(--surface); border-radius: 18px; padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
   .chat-list-item:active { transform: scale(.99); box-shadow: var(--shadow-md); }
@@ -244,7 +245,7 @@
 
   .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--grad-green); color: white; padding: 14px 22px; border-radius: 14px; font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(16,185,129,.4); opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(.34,1.56,.64,1); z-index: 300; display: flex; align-items: center; gap: 8px; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast.error { background: linear-gradient(135deg, #F87171 0%, #DC2626 100%); box-shadow: 0 8px 24px rgba(220,38,38,.4); }
+  .toast.error { background: var(--grad-red); box-shadow: 0 8px 24px rgba(220,38,38,.4); }
   .toast.warning { background: var(--grad-warm); box-shadow: 0 8px 24px rgba(245,158,11,.4); }
   .toast .toast-icon { font-size: 18px; }
 
@@ -306,7 +307,6 @@
 <div class="app-container" id="appContainer">
   <div class="header">
     <h1><span class="brand-emoji">🧑‍💻</span> TeenWork</h1>
-    <button class="logout-btn" onclick="logout()">Выйти</button>
   </div>
 
   <div id="homeSection">
@@ -353,6 +353,7 @@
     <div class="profile-actions">
       <button class="profile-btn primary" onclick="switchNav('myResponses')">📋 Мои отклики</button>
       <button class="profile-btn" onclick="openSupportChat()">💬 Поддержка</button>
+      <button class="profile-btn danger" onclick="logout()">🚪 Выйти из аккаунта</button>
     </div>
   </div>
 
@@ -1608,7 +1609,7 @@ async function addTask() {
     showToast('Введи корректную цену (целое положительное число)', 'warning');
     return;
   }
-  const wasRounded = isFinite(rawPriceNum) && Math.abs(rawPriceNum - price) >= 0.5;
+  const wasRounded = isFinite(rawPriceNum) && Math.abs(rawPriceNum - price) > 0;
 
   if (!categories.length) { showToast('Выбери категорию', 'warning'); return; }
 
@@ -1669,4 +1670,3 @@ async function addTask() {
 </script>
 </body>
 </html>
-```
