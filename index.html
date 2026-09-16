@@ -173,6 +173,7 @@
   .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
   .modal-actions button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: transform .15s; }
   .modal-actions button:active { transform: scale(.97); }
+  .modal-actions button:disabled { cursor: not-allowed; opacity: .7; }
   .modal-actions .btn-cancel { background: #F3F4F6; color: #374151; }
   .modal-actions .btn-submit { background: var(--grad-main); color: white; box-shadow: 0 4px 12px rgba(124,58,237,.3); }
   .modal-actions .btn-danger { background: var(--grad-red); color: white; box-shadow: 0 4px 12px rgba(220,38,38,.3); }
@@ -689,6 +690,8 @@ let currentChatId = null;
 let currentChatUnsub = null;
 let chatsUnsub = null;
 let pendingDeleteTaskId = null;
+let addTaskInFlight = false;
+let applyTaskInFlight = {};
 let userStats = {
   tasksCreated: 0,
   responsesSent: 0,
@@ -1125,6 +1128,7 @@ async function confirmDeleteTask() {
 }
 
 async function applyForTask(taskId, btn) {
+  if (applyTaskInFlight[taskId]) return;
   const task = tasks.find(t => t.id === taskId);
   if (!task || !currentUser) return;
   if (task.authorId === currentUser.uid) {
@@ -1136,10 +1140,20 @@ async function applyForTask(taskId, btn) {
     return;
   }
 
+  applyTaskInFlight[taskId] = true;
+
+  const originalText = btn ? btn.textContent : '';
   if (btn) {
     btn.disabled = true;
     btn.textContent = '⏳ Отправка...';
   }
+
+  const restoreBtn = () => {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  };
 
   const newResponse = {
     executor: userName,
@@ -1156,6 +1170,7 @@ async function applyForTask(taskId, btn) {
     if (btn) {
       btn.classList.add('success');
       btn.textContent = '✓ Отклик отправлен';
+      btn.disabled = true;
     }
     showCheckAnim();
     showToast('Отклик отправлен! Жди ответа');
@@ -1163,11 +1178,10 @@ async function applyForTask(taskId, btn) {
     setTimeout(() => renderTasks(), 1000);
   } catch (error) {
     console.error(error);
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '🚀 Откликнуться';
-    }
+    restoreBtn();
     showToast('Ошибка отправки', 'error');
+  } finally {
+    delete applyTaskInFlight[taskId];
   }
 }
 
@@ -1595,6 +1609,24 @@ function parsePrice(raw) {
 }
 
 async function addTask() {
+  if (addTaskInFlight) return;
+  addTaskInFlight = true;
+
+  const submitBtn = document.querySelector('#addModal .btn-submit');
+  const originalBtnText = submitBtn ? submitBtn.textContent : 'Опубликовать';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Отправка...';
+  }
+
+  const release = () => {
+    addTaskInFlight = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalBtnText;
+    }
+  };
+
   const rawTitle = document.getElementById('taskTitle').value.trim();
   const rawPriceStr = document.getElementById('taskPrice').value.trim();
   const rawPriceNum = Number(String(rawPriceStr).replace(',', '.').trim());
@@ -1602,23 +1634,26 @@ async function addTask() {
   const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
   const categories = getSelectedCategories('modalCategories');
 
-  if (!rawTitle) { showToast('Введи название', 'warning'); return; }
+  if (!rawTitle) { showToast('Введи название', 'warning'); release(); return; }
 
   const price = parsePrice(rawPriceStr);
   if (price === null) {
     showToast('Введи корректную цену (целое положительное число)', 'warning');
+    release();
     return;
   }
   const wasRounded = isFinite(rawPriceNum) && Math.abs(rawPriceNum - price) > 0;
 
-  if (!categories.length) { showToast('Выбери категорию', 'warning'); return; }
+  if (!categories.length) { showToast('Выбери категорию', 'warning'); release(); return; }
 
   if (checkForbiddenContent(rawTitle)) {
     showToast('Название отклонено: запрещённый контент', 'error');
+    release();
     return;
   }
   if (checkForbiddenContent(rawDesc)) {
     showToast('Описание отклонено: запрещённый контент', 'error');
+    release();
     return;
   }
 
@@ -1665,6 +1700,8 @@ async function addTask() {
   } catch (error) {
     showToast('Ошибка сохранения', 'error');
     console.error(error);
+  } finally {
+    release();
   }
 }
 </script>
