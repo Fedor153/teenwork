@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TeenWork — Работа для подростков</title>
+<title>Снег — Работа для подростков</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -101,38 +102,15 @@
   .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
   .search-bar input { flex: 1; padding: 13px 18px; border: 2px solid transparent; border-radius: 14px; font-size: 14px; background: var(--surface); outline: none; font-family: inherit; box-shadow: var(--shadow-sm); transition: all .2s; }
   .search-bar input:focus { border-color: var(--violet); box-shadow: 0 0 0 4px rgba(124,58,237,.1); }
-  .filter-btn { padding: 13px 18px; background: var(--grad-main); color: white; border: none; border-radius: 14px; font-size: 14px; cursor: pointer; box-shadow: var(--shadow-md); font-family: inherit; }
-
-  .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
-  .tab { padding: 9px 22px; border-radius: 22px; border: 2px solid var(--divider); background: var(--surface); font-size: 14px; cursor: pointer; white-space: nowrap; font-weight: 600; color: var(--text2); font-family: inherit; transition: all .2s; }
-  .tab.active { background: var(--grad-main); color: white; border-color: transparent; box-shadow: var(--shadow-md); }
 
   .task-card { background: var(--surface); border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; border-left: 5px solid var(--violet); }
   .task-card:active { transform: scale(.99); }
   .task-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; background: var(--grad-main); border-radius: 50%; opacity: .04; pointer-events: none; }
-  .task-card.cat-texts { border-left-color: #7C3AED; }
-  .task-card.cat-design { border-left-color: #EC4899; }
-  .task-card.cat-social { border-left-color: #3B82F6; }
-  .task-card.cat-data { border-left-color: #10B981; }
-  .task-card.cat-study { border-left-color: #F59E0B; }
-  .task-card.cat-translate { border-left-color: #06B6D4; }
-  .task-card.cat-creative { border-left-color: #F97316; }
-  .task-card.cat-tech { border-left-color: #8B5CF6; }
 
   .task-badge-new { position: absolute; top: 12px; right: 12px; padding: 4px 10px; background: var(--grad-warm); color: white; border-radius: 10px; font-size: 10px; font-weight: 800; letter-spacing: .3px; box-shadow: 0 4px 12px rgba(245,158,11,.35); animation: badgePulse 2s ease-in-out infinite; }
   @keyframes badgePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
-  .task-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; padding-right: 70px; }
-  .task-category { padding: 5px 12px; background: #F0EDFF; color: var(--violet); border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: .2px; }
-  .task-category.cat-design { background: #FCE7F3; color: #BE185D; }
-  .task-category.cat-social { background: #DBEAFE; color: #1E40AF; }
-  .task-category.cat-data { background: #D1FAE5; color: #065F46; }
-  .task-category.cat-study { background: #FEF3C7; color: #92400E; }
-  .task-category.cat-translate { background: #CFFAFE; color: #155E75; }
-  .task-category.cat-creative { background: #FFEDD5; color: #9A3412; }
-  .task-category.cat-tech { background: #EDE9FE; color: #5B21B6; }
-
-  .task-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 12px; }
+  .task-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 12px; padding-right: 70px; }
   .task-title { font-size: 18px; font-weight: 800; color: var(--text); word-break: break-word; line-height: 1.25; letter-spacing: -.3px; }
   .task-price { font-size: 22px; font-weight: 800; background: var(--grad-green); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex-shrink: 0; letter-spacing: -.5px; }
   .task-desc { font-size: 14px; color: var(--text2); margin-bottom: 10px; word-break: break-word; line-height: 1.4; }
@@ -167,9 +145,6 @@
   .modal input, .modal textarea { width: 100%; padding: 13px 14px; border: 2px solid var(--divider); border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; font-family: inherit; background: #FAFAFF; transition: all .2s; }
   .modal input:focus, .modal textarea:focus { border-color: var(--violet); background: white; box-shadow: 0 0 0 4px rgba(124,58,237,.1); }
   .modal textarea { min-height: 80px; resize: vertical; }
-  .modal-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .modal-category { padding: 7px 15px; border-radius: 20px; border: 2px solid var(--divider); font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text2); transition: all .2s; }
-  .modal-category.selected { background: var(--grad-main); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(124,58,237,.3); }
   .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
   .modal-actions button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: transform .15s; }
   .modal-actions button:active { transform: scale(.97); }
@@ -262,15 +237,15 @@
 <body>
 
 <div class="splash" id="splashScreen">
-  <div class="logo-circle">🧑‍💻</div>
-  <div class="app-name">TeenWork</div>
+  <div class="logo-circle">❄️</div>
+  <div class="app-name">Снег</div>
   <div class="app-subtitle">Работа для подростков</div>
   <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
 </div>
 
 <div class="auth-container" id="authContainer">
   <div class="auth-card">
-    <h2 id="authTitle">Вход в TeenWork</h2>
+    <h2 id="authTitle">Вход в Снег</h2>
     <div class="subtitle" id="authSubtitle">Войдите в свой аккаунт</div>
     <div class="error" id="authError"></div>
     <div class="info" id="authInfo"></div>
@@ -289,31 +264,26 @@
 
 <div class="terms-container" id="termsContainer">
   <div class="terms-card">
-    <h2>📋 Правила TeenWork</h2>
+    <h2>📋 Правила Снег</h2>
     <div class="rule"><div class="title">1. Регистрация</div><div class="desc">При регистрации ты обязуешься указывать достоверные данные.</div></div>
     <div class="rule"><div class="title">2. Честность</div><div class="desc">Исполнитель обязуется выполнять работу качественно и в срок.</div></div>
     <div class="rule"><div class="title">3. Безопасность</div><div class="desc">Запрещено передавать личные данные другим пользователям.</div></div>
     <div class="rule"><div class="title">4. Оплата</div><div class="desc">Аванс 20% до начала работы, остаток 80% после выполнения.</div></div>
-    <div class="rule important"><div class="title">5. ОТВЕТСТВЕННОСТЬ</div><div class="desc">TeenWork не несёт ответственности за качество выполнения заказов, а также за любые споры между пользователями. Все претензии решаются между заказчиком и исполнителем напрямую.</div></div>
-    <div class="rule"><div class="title">6. Запрещено</div><div class="desc">Мошенничество, грубость, спам, распространение вредоносного ПО.</div></div>
+    <div class="rule important"><div class="title">5. ОТВЕТСТВЕННОСТЬ</div><div class="desc">Снег не несёт ответственности за качество выполнения заказов, а также за любые споры между пользователями. Все претензии решаются между заказчиком и исполнителем напрямую.</div></div>
+    <div class="rule"><div class="title">6. Запрещено</div><div class="desc">Мошенничество, грубость, спам, распространение вредоносного ПО. Мат, оскорбления, предложения чего-либо незаконного и любой контент 18+ строго запрещены.</div></div>
     <button class="btn-accept" onclick="acceptTerms()">✅ Принимаю правила</button>
   </div>
 </div>
 
 <div class="app-container" id="appContainer">
   <div class="header">
-    <h1><span class="brand-emoji">🧑‍💻</span> TeenWork</h1>
+    <h1><span class="brand-emoji">❄️</span> Снег</h1>
     <button class="logout-btn" onclick="logout()">Выйти</button>
   </div>
 
   <div id="homeSection">
     <div class="search-bar">
       <input id="searchInput" placeholder="🔍 Поиск по заданиям..." oninput="filterTasks()">
-      <button class="filter-btn" onclick="openFilterModal()">⚙️</button>
-    </div>
-    <div class="tabs" id="tabsContainer">
-      <button class="tab active" data-tab="all" onclick="switchTab('all')">✨ Все</button>
-      <button class="tab" data-tab="recommended" onclick="switchTab('recommended')">🎯 Для тебя</button>
     </div>
     <div id="tasksContainer"></div>
     <button class="fab" onclick="openAddModal()">➕ Создать</button>
@@ -375,23 +345,9 @@
     <input id="taskPrice" placeholder="Цена *" type="number">
     <textarea id="taskDesc" placeholder="Описание"></textarea>
     <input id="taskDeadline" placeholder="Срок выполнения">
-    <div style="font-size:13px; font-weight:700; margin-bottom:8px; color: var(--text);">Категории:</div>
-    <div class="modal-categories" id="modalCategories"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeAddModal()">Отмена</button>
       <button class="btn-submit" onclick="addTask()">Опубликовать</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="filterModal">
-  <div class="modal">
-    <div class="modal-title">⚙️ Фильтр</div>
-    <div style="font-size:13px; font-weight:700; margin-bottom:8px; color: var(--text);">Выбери категории:</div>
-    <div class="modal-categories" id="filterCategories"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeFilterModal()">Закрыть</button>
-      <button class="btn-submit" onclick="applyFilter()">Применить</button>
     </div>
   </div>
 </div>
@@ -454,33 +410,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// ВНИМАНИЕ: SUPPORT_UID сейчас работает как "бот" — ответы пишет сам клиент.
-// При переходе на реальную поддержку перенести генерацию ответов в Cloud Function,
-// чтобы Firestore Rules могли отличать реального оператора от подделки клиентом.
 const SUPPORT_UID = 'teenwork-support-bot';
-const SUPPORT_NAME = 'TeenWork Support';
-
-const CATEGORY_STYLES = {
-  'Написание текстов': 'cat-texts',
-  'Рерайт статей': 'cat-texts',
-  'Придумать слоган': 'cat-texts',
-  'Написание отзывов': 'cat-texts',
-  'Составление списков': 'cat-data',
-  'Транскрибация аудио': 'cat-data',
-  'Расшифровка субтитров': 'cat-data',
-  'Дизайн в Canva': 'cat-design',
-  'Оформление обложек': 'cat-design',
-  'Подбор стоковых фото': 'cat-design',
-  'Создание мемов': 'cat-design',
-  'Посты для соцсетей': 'cat-social',
-  'Ответы на комментарии': 'cat-social',
-  'Подбор хэштегов': 'cat-social',
-  'Помощь с уроками': 'cat-study',
-  'Проверка ДЗ': 'cat-study',
-  'Составление конспектов': 'cat-study',
-  'Перевод текстов': 'cat-translate',
-  'Проверка перевода': 'cat-translate'
-};
+const SUPPORT_NAME = 'Снег Support';
 
 const LEVELS = [
   { min: 0, name: '🌱 Новичок' },
@@ -490,9 +421,6 @@ const LEVELS = [
   { min: 50, name: '👑 Легенда' }
 ];
 
-// Критерии бейджей описаны так, чтобы точно соответствовать коду проверки.
-// Бейдж "five_star" переименован в "Пятёрка откликов" — раньше он обещал рейтинг 5.0,
-// но фактически проверял количество принятых откликов.
 const BADGES = [
   { id: 'first_task', icon: '🎯', name: 'Первый шаг', desc: 'Создал задание' },
   { id: 'first_response', icon: '✋', name: 'Отклик', desc: 'Первый отклик' },
@@ -503,6 +431,143 @@ const BADGES = [
   { id: 'five_star', icon: '⭐', name: 'Пятёрка откликов', desc: '5 принятых откликов' },
   { id: 'night_owl', icon: '🦉', name: 'Сова', desc: 'Работа ночью (00:00–05:00)' }
 ];
+
+const BAD_WORDS = [
+  'хуй','хуя','хую','хуё','хуе','пизд','пизж','бля','блят','бляд',
+  'еба','ебал','ебан','ебат','ебет','ебут','ебуч','еби','ёба','ёбл','ёбу',
+  'сука','суки','суке','суку','сучк','мудак','мудил','мраз','гандон','гондон',
+  'долбоеб','пидор','пидар','пидр','педик','шлюх','шлюш','проститут',
+  'нахуй','нахуя','похуй','охуе','ахуе','вхуя','залуп','манда','мандав','манде',
+  'сперм','говн','жоп','срак','срать','сру','насра','обосра',
+  'убей','убью','убейте','убить','зарежу','застрел','взорву',
+  'нарко','наркот','героин','кокаин','мефедрон','спайс',
+  'марихуан','гашиш','анаша','амфетамин','метамфетамин','экстази','мдма','лсд',
+  'оружие','пистолет','автомат','патрон','гранат','взрывчатк','тротил',
+  'теракт','исламск','джихад','шахид','смертник',
+  'порно','секс','секса','сексом','минет','оргазм','эротик',
+  'интим','18+','xxx','хентай','голая','голый','раздева','стриптиз',
+  'педофил','лоли','школьниц','несовершеннолетн',
+  'казино','ставки','букмекер','рулетк','1xbet'
+];
+
+const BAD_PHRASES = [
+  'продам траву','продаю траву','купить траву','продаю меф','продам меф',
+  'продаю кокс','продам кокс','купить кокс','продам нарко','продаю нарко',
+  'продам оружие','продаю оружие','купить оружие','продам пистолет','продам автомат',
+  'закажи убийство','закажу убийство','найму убийцу','убей его','убей ее',
+  'интим услуги','секс услуги','услуги интим','18+ контент',
+  'ставки на спорт','покер на деньги','играть в казино',
+  'продам аккаунт','продаю аккаунт','обнал','обналич','карта на продажу',
+  'взломать','взлом','ддос','ddos','ботнет','фишинг','скупка данных'
+];
+
+const WHITELIST = new Set([
+  'команда','команды','команде','команду','командой','командую','команда',
+  'командная','командный','командные','командовать','командование',
+  'командовать','командир','командиры','командиров',
+  'аналог','аналоги','аналогия','аналогичный','аналогичная','аналогичное',
+  'анализ','анализа','анализу','анализом','анализе','анализы',
+  'аналитик','аналитики','аналитику','аналитика','аналитике','аналитикой',
+  'аналитический','аналитическая',
+  'сексолог','сексология','сексологический',
+  'убийственный','убийственная','убийственно','убийственен',
+  'порошок','порошка','порошку','порошком','порошковый'
+]);
+
+function normalize(text) {
+  return String(text == null ? '' : text)
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/@/g, 'a')
+    .replace(/0/g, 'o')
+    .replace(/1/g, 'i')
+    .replace(/3/g, 'e')
+    .replace(/4/g, 'a')
+    .replace(/5/g, 's')
+    .replace(/7/g, 't')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stripNonLetters(text) {
+  return normalize(text).replace(/[^a-zа-я0-9 ]/g, '');
+}
+
+function isWhitelisted(word) {
+  if (!word) return false;
+  return WHITELIST.has(word);
+}
+
+function checkForbiddenContent(text) {
+  if (!text) return false;
+  const normalized = normalize(text);
+  const stripped = stripNonLetters(text);
+
+  for (const phrase of BAD_PHRASES) {
+    const p = phrase.replace(/[^a-zа-я0-9 ]/g, '');
+    if (normalized.includes(phrase) || stripped.includes(p)) {
+      return true;
+    }
+  }
+
+  const linkRegex = /(https?:\/\/|www\.|t\.me\/|wa\.me\/|telegram\.me\/)/i;
+  if (linkRegex.test(text)) return true;
+
+  const phoneRegex = /(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}/;
+  if (phoneRegex.test(text)) return true;
+
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+  if (emailRegex.test(text)) return true;
+
+  const cardRegex = /\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}\b/;
+  if (cardRegex.test(text)) return true;
+
+  return false;
+}
+
+function censorText(text) {
+  if (!text) return text;
+  let result = String(text);
+
+  for (const bad of BAD_WORDS) {
+    const regex = new RegExp(`(^|[^a-zA-Zа-яА-Я0-9])(${bad})(?=$|[^a-zA-Zа-яА-Я0-9])`, 'gi');
+    result = result.replace(regex, (m, p1, p2) => {
+      if (isWhitelisted(p2.toLowerCase())) return m;
+      return p1 + '*'.repeat(p2.length);
+    });
+  }
+
+  return result;
+}
+
+function containsBadWords(text) {
+  if (!text) return false;
+  const stripped = stripNonLetters(text);
+  const words = stripped.split(/\s+/).filter(Boolean);
+
+  for (const w of words) {
+    if (isWhitelisted(w)) continue;
+    for (const bad of BAD_WORDS) {
+      const badNorm = normalize(bad).replace(/[^a-zа-я0-9]/g, '');
+      if (!badNorm) continue;
+      if (w === badNorm) return true;
+      if (badNorm.length >= 5 && w.length === badNorm.length && w.includes(badNorm)) return true;
+    }
+  }
+
+  return false;
+}
+
+function validateContent(text, label) {
+  if (!text) return null;
+  if (checkForbiddenContent(text)) {
+    return `${label}: запрещённый контент`;
+  }
+  if (containsBadWords(text)) {
+    return `${label}: недопустимые слова`;
+  }
+  return null;
+}
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -539,9 +604,7 @@ function showCheckAnim() {
 
 let tasks = [];
 let chats = [];
-let currentTab = 'all';
 let currentNav = 'home';
-let filterCategories = [];
 let currentUser = null;
 let userName = '';
 let currentChatId = null;
@@ -556,21 +619,12 @@ let userStats = {
   nightOwlEarned: false
 };
 
-const allCategories = [
-  'Написание текстов', 'Рерайт статей', 'Придумать слоган', 'Написание отзывов',
-  'Составление списков', 'Транскрибация аудио', 'Расшифровка субтитров',
-  'Дизайн в Canva', 'Оформление обложек', 'Подбор стоковых фото', 'Создание мемов',
-  'Посты для соцсетей', 'Ответы на комментарии', 'Подбор хэштегов',
-  'Помощь с уроками', 'Проверка ДЗ', 'Составление конспектов',
-  'Перевод текстов', 'Проверка перевода'
-];
-
 let isLogin = true;
 let authLoading = false;
 
 function toggleAuth() {
   isLogin = !isLogin;
-  document.getElementById('authTitle').textContent = isLogin ? 'Вход в TeenWork' : 'Регистрация';
+  document.getElementById('authTitle').textContent = isLogin ? 'Вход в Снег' : 'Регистрация в Снег';
   document.getElementById('authSubtitle').textContent = isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт';
   document.getElementById('authName').style.display = isLogin ? 'none' : 'block';
   document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
@@ -601,6 +655,14 @@ async function handleAuth() {
     errorEl.textContent = 'Введи имя';
     errorEl.classList.add('show');
     return;
+  }
+  if (!isLogin) {
+    const nameError = validateContent(name, 'Имя');
+    if (nameError) {
+      errorEl.textContent = nameError;
+      errorEl.classList.add('show');
+      return;
+    }
   }
 
   authLoading = true;
@@ -755,8 +817,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Читаем persistent-флаг nightOwlEarned из Firestore и, если сейчас ночь,
-// фиксируем достижение на сервере — чтобы бейдж "Сова" не исчезал между сессиями.
 async function loadUserStats() {
   if (!currentUser) return;
   try {
@@ -786,7 +846,7 @@ async function loadTasks() {
     renderTasks();
     updateProfileStats();
   } catch (error) {
-    console.warn('⚠️ Ошибка загрузки:', error);
+    console.warn('Ошибка загрузки:', error);
     tasks = [];
     renderTasks();
   }
@@ -849,11 +909,6 @@ function getFilteredTasks() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
   let filtered = tasks;
   if (search) filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(search));
-  if (filterCategories.length) filtered = filtered.filter(t => (t.categories || []).some(c => filterCategories.includes(c)));
-  if (currentTab === 'recommended') {
-    const interests = ['Тексты', 'Дизайн', 'Соцсети', 'Монтаж', 'Учёба', 'Переводы'];
-    filtered = filtered.filter(t => (t.categories || []).some(c => interests.some(i => c.includes(i) || i.includes(c))));
-  }
   return filtered;
 }
 
@@ -865,10 +920,6 @@ function isNewTask(task) {
   else if (task.createdAt.seconds) ms = task.createdAt.seconds * 1000;
   else return false;
   return (Date.now() - ms) < 3600000;
-}
-
-function getCategoryClass(cat) {
-  return CATEGORY_STYLES[cat] || 'cat-texts';
 }
 
 function renderTasks() {
@@ -889,8 +940,6 @@ function renderTasks() {
     const myResponse = (task.responses || []).find(r => r.executorId === (currentUser && currentUser.uid));
     const hasResponses = (task.responses || []).length > 0;
     const newBadge = isNewTask(task) ? '<div class="task-badge-new">🔥 Новое</div>' : '';
-    const firstCat = (task.categories || [])[0] || '';
-    const cardClass = getCategoryClass(firstCat);
 
     let buttons = '';
     if (isMyTask) {
@@ -909,9 +958,8 @@ function renderTasks() {
     }
 
     return `
-      <div class="task-card ${cardClass}">
+      <div class="task-card">
         ${newBadge}
-        <div class="task-categories">${(task.categories || []).map(c => `<span class="task-category ${getCategoryClass(c)}">${escapeHtml(c)}</span>`).join('')}</div>
         <div class="task-title-row">
           <span class="task-title">${escapeHtml(task.title)}</span>
           <span class="task-price">${escapeHtml(task.price)} ₽</span>
@@ -1076,7 +1124,7 @@ function startChatsListener() {
       renderChats();
       updateProfileStats();
     }, err => {
-      console.warn('⚠️ Ошибка слушателя чатов:', err);
+      console.warn('Ошибка слушателя чатов:', err);
     });
 }
 
@@ -1100,7 +1148,7 @@ function renderChats() {
     const time = last?.time ? formatTime(new Date(last.time)) : '';
     return `
       <div class="chat-list-item" onclick="openChatById('${escapeJs(chat.id)}')">
-        <div class="chat-avatar ${isSupport ? 'support' : ''}">${isSupport ? '💚' : escapeHtml((otherName || '?')[0].toUpperCase())}</div>
+        <div class="chat-avatar ${isSupport ? 'support' : ''}">${isSupport ? '❄️' : escapeHtml((otherName || '?')[0].toUpperCase())}</div>
         <div class="chat-list-body">
           <div class="chat-list-name">${escapeHtml(otherName)}</div>
           <div class="chat-list-last">${escapeHtml(lastText)}</div>
@@ -1194,8 +1242,16 @@ function closeChatModal() {
 
 async function sendChatMessage() {
   const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text || !currentChatId || !currentUser) return;
+  const rawText = input.value.trim();
+  if (!rawText || !currentChatId || !currentUser) return;
+
+  if (checkForbiddenContent(rawText)) {
+    showToast('Сообщение отклонено: запрещённый контент', 'error');
+    return;
+  }
+
+  const text = censorText(rawText);
+  const wasCensored = text !== rawText;
 
   const msg = {
     id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -1209,6 +1265,9 @@ async function sendChatMessage() {
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     });
     userStats.chatsOpened = Math.max(userStats.chatsOpened, 1);
+    if (wasCensored) {
+      showToast('Часть текста скрыта за недопустимые слова', 'warning');
+    }
 
     const chatDoc = await db.collection('chats').doc(currentChatId).get();
     const data = chatDoc.data() || {};
@@ -1217,7 +1276,7 @@ async function sendChatMessage() {
       setTimeout(async () => {
         const reply = {
           id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-          text: 'Привет! 👋 Это TeenWork Support. Опиши свою проблему, и мы поможем в течение дня. Если это что-то срочное — уточни детали и не передавай пароль или личные данные.',
+          text: 'Привет! 👋 Это Снег Support. Опиши свою проблему, и мы поможем в течение дня. Если это что-то срочное — уточни детали и не передавай пароль или личные данные.',
           senderId: SUPPORT_UID,
           time: new Date().toISOString()
         };
@@ -1257,7 +1316,7 @@ function renderMyResponses() {
   }
 
   container.innerHTML = mine.map(({ task, response }) => `
-    <div class="task-card ${getCategoryClass((task.categories || [])[0] || '')}">
+    <div class="task-card">
       <div class="task-title-row">
         <span class="task-title">${escapeHtml(task.title)}</span>
         <span class="task-price">${escapeHtml(task.price)} ₽</span>
@@ -1271,13 +1330,6 @@ function renderMyResponses() {
       </div>
     </div>
   `).join('');
-}
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
-  renderTasks();
 }
 
 function switchNav(nav) {
@@ -1301,30 +1353,8 @@ function filterTasks() { renderTasks(); }
 
 function openAddModal() {
   document.getElementById('addModal').classList.add('show');
-  renderCategoryChips('modalCategories');
 }
 function closeAddModal() { document.getElementById('addModal').classList.remove('show'); }
-
-function openFilterModal() {
-  document.getElementById('filterModal').classList.add('show');
-  renderCategoryChips('filterCategories');
-}
-function closeFilterModal() { document.getElementById('filterModal').classList.remove('show'); }
-
-function renderCategoryChips(containerId) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = allCategories.map(c => `<span class="modal-category" onclick="toggleCategory(this)">${escapeHtml(c)}</span>`).join('');
-}
-function toggleCategory(el) { el.classList.toggle('selected'); }
-function getSelectedCategories(containerId) {
-  return Array.from(document.getElementById(containerId).querySelectorAll('.selected')).map(el => el.textContent);
-}
-
-function applyFilter() {
-  filterCategories = getSelectedCategories('filterCategories');
-  closeFilterModal();
-  renderTasks();
-}
 
 function formatTime(date) {
   if (!(date instanceof Date) || isNaN(date)) return '';
@@ -1341,18 +1371,29 @@ function formatTime(date) {
 }
 
 async function addTask() {
-  const title = document.getElementById('taskTitle').value.trim();
+  const rawTitle = document.getElementById('taskTitle').value.trim();
   const price = parseInt(document.getElementById('taskPrice').value.trim());
-  const desc = document.getElementById('taskDesc').value.trim();
+  const rawDesc = document.getElementById('taskDesc').value.trim();
   const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
-  const categories = getSelectedCategories('modalCategories');
 
-  if (!title) { showToast('Введи название', 'warning'); return; }
+  if (!rawTitle) { showToast('Введи название', 'warning'); return; }
   if (!price || isNaN(price)) { showToast('Введи корректную цену', 'warning'); return; }
-  if (!categories.length) { showToast('Выбери категорию', 'warning'); return; }
+
+  if (checkForbiddenContent(rawTitle)) {
+    showToast('Название отклонено: запрещённый контент', 'error');
+    return;
+  }
+  if (checkForbiddenContent(rawDesc)) {
+    showToast('Описание отклонено: запрещённый контент', 'error');
+    return;
+  }
+
+  const title = censorText(rawTitle);
+  const desc = censorText(rawDesc);
+  const wasCensored = (title !== rawTitle) || (desc !== rawDesc);
 
   const newTask = {
-    title, categories, price,
+    title, price,
     description: desc || 'Без описания',
     deadline,
     author: userName || 'Пользователь',
@@ -1376,9 +1417,12 @@ async function addTask() {
     document.getElementById('taskPrice').value = '';
     document.getElementById('taskDesc').value = '';
     document.getElementById('taskDeadline').value = '';
-    document.getElementById('modalCategories').querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     showCheckAnim();
-    showToast('Задание опубликовано!');
+    if (wasCensored) {
+      showToast('Опубликовано. Часть текста скрыта', 'warning');
+    } else {
+      showToast('Задание опубликовано!');
+    }
   } catch (error) {
     showToast('Ошибка сохранения', 'error');
     console.error(error);
@@ -1387,3 +1431,4 @@ async function addTask() {
 </script>
 </body>
 </html>
+```
