@@ -223,10 +223,12 @@
   .chat-header .chat-back:hover, .chat-header .chat-close:hover { background: rgba(255,255,255,.25); }
   .chat-header .chat-title { flex: 1; font-weight: 700; font-size: 16px; word-break: break-word; letter-spacing: -.2px; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #F8F7FF; }
-  .chat-msg { max-width: 78%; padding: 11px 15px; border-radius: 18px; margin-bottom: 10px; font-size: 14px; line-height: 1.4; word-wrap: break-word; white-space: pre-wrap; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+  .chat-msg { max-width: 78%; padding: 11px 15px; border-radius: 18px; margin-bottom: 10px; font-size: 14px; line-height: 1.4; word-wrap: break-word; white-space: pre-wrap; box-shadow: 0 2px 6px rgba(0,0,0,.05); position: relative; }
   .chat-msg.me { background: var(--grad-main); color: white; margin-left: auto; border-bottom-right-radius: 5px; box-shadow: 0 4px 12px rgba(124,58,237,.25); }
   .chat-msg.other { background: white; color: var(--text); margin-right: auto; border-bottom-left-radius: 5px; }
   .chat-msg .chat-time { font-size: 10px; opacity: .75; margin-top: 4px; display: block; font-weight: 500; }
+  .chat-msg .chat-del { display: inline-block; margin-left: 8px; font-size: 12px; opacity: .65; cursor: pointer; transition: opacity .15s; user-select: none; }
+  .chat-msg .chat-del:hover { opacity: 1; }
   .chat-input-row { display: flex; padding: 12px; gap: 8px; background: white; border-top: 1px solid var(--divider); }
   .chat-input-row input { flex: 1; padding: 13px 18px; border: 2px solid var(--divider); border-radius: 26px; font-size: 14px; outline: none; background: #FAFAFF; font-family: inherit; transition: all .2s; }
   .chat-input-row input:focus { border-color: var(--violet); background: white; }
@@ -295,7 +297,7 @@
     <div class="rule"><div class="title">3. Безопасность</div><div class="desc">Запрещено передавать личные данные другим пользователям.</div></div>
     <div class="rule"><div class="title">4. Оплата</div><div class="desc">Аванс 20% до начала работы, остаток 80% после выполнения.</div></div>
     <div class="rule important"><div class="title">5. ОТВЕТСТВЕННОСТЬ</div><div class="desc">TeenWork не несёт ответственности за качество выполнения заказов, а также за любые споры между пользователями. Все претензии решаются между заказчиком и исполнителем напрямую.</div></div>
-    <div class="rule"><div class="title">6. Запрещено</div><div class="desc">Мошенничество, грубость, спам, распространение вредоносного ПО.</div></div>
+    <div class="rule"><div class="title">6. Запрещено</div><div class="desc">Мошенничество, грубость, спам, распространение вредоносного ПО. Мат, оскорбления, предложения чего-либо незаконного и любой контент 18+ строго запрещены.</div></div>
     <button class="btn-accept" onclick="acceptTerms()">✅ Принимаю правила</button>
   </div>
 </div>
@@ -454,9 +456,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// ВНИМАНИЕ: SUPPORT_UID сейчас работает как "бот" — ответы пишет сам клиент.
-// При переходе на реальную поддержку перенести генерацию ответов в Cloud Function,
-// чтобы Firestore Rules могли отличать реального оператора от подделки клиентом.
 const SUPPORT_UID = 'teenwork-support-bot';
 const SUPPORT_NAME = 'TeenWork Support';
 
@@ -490,9 +489,6 @@ const LEVELS = [
   { min: 50, name: '👑 Легенда' }
 ];
 
-// Критерии бейджей описаны так, чтобы точно соответствовать коду проверки.
-// Бейдж "five_star" переименован в "Пятёрка откликов" — раньше он обещал рейтинг 5.0,
-// но фактически проверял количество принятых откликов.
 const BADGES = [
   { id: 'first_task', icon: '🎯', name: 'Первый шаг', desc: 'Создал задание' },
   { id: 'first_response', icon: '✋', name: 'Отклик', desc: 'Первый отклик' },
@@ -503,6 +499,132 @@ const BADGES = [
   { id: 'five_star', icon: '⭐', name: 'Пятёрка откликов', desc: '5 принятых откликов' },
   { id: 'night_owl', icon: '🦉', name: 'Сова', desc: 'Работа ночью (00:00–05:00)' }
 ];
+
+const BAD_WORDS = [
+  'хуй','хуя','хую','хуё','хуе','пизд','пизж','бля','блят','бляд',
+  'еба','ебал','ебан','ебат','ебет','ебут','ебуч','еби','ёба','ёбл','ёбу',
+  'сука','суки','суке','суку','сучк','мудак','мудил','мраз','гандон','гондон',
+  'долбоеб','пидор','пидар','пидр','педик','шлюх','шлюш','проститут',
+  'нахуй','нахуя','похуй','охуе','ахуе','вхуя','залуп','манда','мандав','манде',
+  'сперм','говн','жоп','срак','срать','сру','насра','обосра',
+  'убей','убью','убейте','убить','зарежу','застрел','взорву',
+  'нарко','наркот','героин','кокаин','мефедрон','спайс',
+  'марихуан','гашиш','анаша','амфетамин','метамфетамин','экстази','мдма','лсд',
+  'оружие','пистолет','автомат','патрон','гранат','взрывчатк','тротил',
+  'теракт','исламск','джихад','шахид','смертник',
+  'порно','секс','секса','сексом','минет','оргазм','эротик',
+  'интим','18+','xxx','хентай','голая','голый','раздева','стриптиз',
+  'педофил','лоли','школьниц','несовершеннолетн',
+  'казино','ставки','букмекер','рулетк','1xbet'
+];
+
+const BAD_PHRASES = [
+  'продам траву','продаю траву','купить траву','продаю меф','продам меф',
+  'продаю кокс','продам кокс','купить кокс','продам нарко','продаю нарко',
+  'продам оружие','продаю оружие','купить оружие','продам пистолет','продам автомат',
+  'закажи убийство','закажу убийство','найму убийцу','убей его','убей ее',
+  'интим услуги','секс услуги','услуги интим','18+ контент',
+  'ставки на спорт','покер на деньги','играть в казино',
+  'продам аккаунт','продаю аккаунт','обнал','обналич','карта на продажу',
+  'взломать','взлом','ддос','ddos','ботнет','фишинг','скупка данных'
+];
+
+const WHITELIST = new Set([
+  'команда','команды','команде','команду','командой','командую',
+  'командная','командный','командные','командовать','командование',
+  'командир','командиры','командиров',
+  'аналог','аналоги','аналогия','аналогичный','аналогичная','аналогичное',
+  'анализ','анализа','анализу','анализом','анализе','анализы',
+  'аналитик','аналитики','аналитику','аналитика','аналитике','аналитикой',
+  'аналитический','аналитическая',
+  'сексолог','сексология','сексологический',
+  'убийственный','убийственная','убийственно','убийственен',
+  'порошок','порошка','порошку','порошком','порошковый'
+]);
+
+function normalize(text) {
+  return String(text == null ? '' : text)
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/@/g, 'a')
+    .replace(/0/g, 'o')
+    .replace(/1/g, 'i')
+    .replace(/3/g, 'e')
+    .replace(/4/g, 'a')
+    .replace(/5/g, 's')
+    .replace(/7/g, 't')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stripNonLetters(text) {
+  return normalize(text).replace(/[^a-zа-я0-9 ]/g, '');
+}
+
+function isWhitelisted(word) {
+  if (!word) return false;
+  return WHITELIST.has(word);
+}
+
+function checkForbiddenContent(text) {
+  if (!text) return false;
+  const normalized = normalize(text);
+  const stripped = stripNonLetters(text);
+
+  for (const phrase of BAD_PHRASES) {
+    const p = phrase.replace(/[^a-zа-я0-9 ]/g, '');
+    if (normalized.includes(phrase) || stripped.includes(p)) {
+      return true;
+    }
+  }
+
+  const linkRegex = /(https?:\/\/|www\.|t\.me\/|wa\.me\/|telegram\.me\/)/i;
+  if (linkRegex.test(text)) return true;
+
+  const phoneRegex = /(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}/;
+  if (phoneRegex.test(text)) return true;
+
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+  if (emailRegex.test(text)) return true;
+
+  const cardRegex = /\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}\b/;
+  if (cardRegex.test(text)) return true;
+
+  return false;
+}
+
+function censorText(text) {
+  if (!text) return text;
+  let result = String(text);
+
+  for (const bad of BAD_WORDS) {
+    const regex = new RegExp(`(^|[^a-zA-Zа-яА-Я0-9])(${bad})(?=$|[^a-zA-Zа-яА-Я0-9])`, 'gi');
+    result = result.replace(regex, (m, p1, p2) => {
+      if (isWhitelisted(p2.toLowerCase())) return m;
+      return p1 + '*'.repeat(p2.length);
+    });
+  }
+
+  return result;
+}
+
+function containsBadWords(text) {
+  if (!text) return false;
+  const stripped = stripNonLetters(text);
+  const words = stripped.split(/\s+/).filter(Boolean);
+
+  for (const w of words) {
+    if (isWhitelisted(w)) continue;
+    for (const bad of BAD_WORDS) {
+      const badNorm = normalize(bad).replace(/[^a-zа-я0-9]/g, '');
+      if (!badNorm) continue;
+      if (w === badNorm) return true;
+      if (badNorm.length >= 5 && w.length === badNorm.length && w.includes(badNorm)) return true;
+    }
+  }
+
+  return false;
+}
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -601,6 +723,13 @@ async function handleAuth() {
     errorEl.textContent = 'Введи имя';
     errorEl.classList.add('show');
     return;
+  }
+  if (!isLogin) {
+    if (checkForbiddenContent(name) || containsBadWords(name)) {
+      errorEl.textContent = 'Имя содержит недопустимые слова';
+      errorEl.classList.add('show');
+      return;
+    }
   }
 
   authLoading = true;
@@ -755,8 +884,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Читаем persistent-флаг nightOwlEarned из Firestore и, если сейчас ночь,
-// фиксируем достижение на сервере — чтобы бейдж "Сова" не исчезал между сессиями.
 async function loadUserStats() {
   if (!currentUser) return;
   try {
@@ -1179,7 +1306,10 @@ function openChatById(chatId) {
     } else {
       box.innerHTML = messages.map(m => {
         const isMe = m.senderId === currentUser.uid;
-        return `<div class="chat-msg ${isMe ? 'me' : 'other'}">${escapeHtml(m.text)}<span class="chat-time">${escapeHtml(formatTime(new Date(m.time)))}</span></div>`;
+        const delBtn = isMe
+          ? `<span class="chat-del" onclick="deleteChatMessage('${escapeJs(m.id)}')" title="Удалить">🗑</span>`
+          : '';
+        return `<div class="chat-msg ${isMe ? 'me' : 'other'}">${escapeHtml(m.text)}<span class="chat-time">${escapeHtml(formatTime(new Date(m.time)))}${delBtn}</span></div>`;
       }).join('');
       box.scrollTop = box.scrollHeight;
     }
@@ -1194,8 +1324,16 @@ function closeChatModal() {
 
 async function sendChatMessage() {
   const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text || !currentChatId || !currentUser) return;
+  const rawText = input.value.trim();
+  if (!rawText || !currentChatId || !currentUser) return;
+
+  if (checkForbiddenContent(rawText)) {
+    showToast('Сообщение отклонено: запрещённый контент', 'error');
+    return;
+  }
+
+  const text = censorText(rawText);
+  const wasCensored = text !== rawText;
 
   const msg = {
     id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -1209,6 +1347,9 @@ async function sendChatMessage() {
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     });
     userStats.chatsOpened = Math.max(userStats.chatsOpened, 1);
+    if (wasCensored) {
+      showToast('Часть текста скрыта за недопустимые слова', 'warning');
+    }
 
     const chatDoc = await db.collection('chats').doc(currentChatId).get();
     const data = chatDoc.data() || {};
@@ -1232,6 +1373,51 @@ async function sendChatMessage() {
   } catch (e) {
     console.error(e);
     showToast('Не удалось отправить', 'error');
+  }
+}
+
+async function deleteChatMessage(msgId) {
+  if (!currentChatId || !currentUser) return;
+
+  const confirmed = confirm('Удалить это сообщение?');
+  if (!confirmed) return;
+
+  try {
+    const chatRef = db.collection('chats').doc(currentChatId);
+    const doc = await chatRef.get();
+    if (!doc.exists) return;
+    const data = doc.data() || {};
+    const messages = Array.isArray(data.messages) ? data.messages : [];
+
+    const target = messages.find(m => m.id === msgId);
+    if (!target) return;
+    if (target.senderId !== currentUser.uid) {
+      showToast('Можно удалять только свои сообщения', 'warning');
+      return;
+    }
+
+    const updated = messages.filter(m => m.id !== msgId);
+
+    await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(chatRef);
+      if (!fresh.exists) throw new Error('Чат не найден');
+      const freshData = fresh.data() || {};
+      const freshMessages = Array.isArray(freshData.messages) ? freshData.messages : [];
+      const freshTarget = freshMessages.find(m => m.id === msgId);
+      if (freshTarget && freshTarget.senderId !== currentUser.uid) {
+        throw new Error('Нет прав на удаление');
+      }
+      const filtered = freshMessages.filter(m => m.id !== msgId);
+      tx.update(chatRef, {
+        messages: filtered,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    showToast('Сообщение удалено');
+  } catch (e) {
+    console.error(e);
+    showToast('Не удалось удалить сообщение', 'error');
   }
 }
 
@@ -1341,15 +1527,28 @@ function formatTime(date) {
 }
 
 async function addTask() {
-  const title = document.getElementById('taskTitle').value.trim();
+  const rawTitle = document.getElementById('taskTitle').value.trim();
   const price = parseInt(document.getElementById('taskPrice').value.trim());
-  const desc = document.getElementById('taskDesc').value.trim();
+  const rawDesc = document.getElementById('taskDesc').value.trim();
   const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
   const categories = getSelectedCategories('modalCategories');
 
-  if (!title) { showToast('Введи название', 'warning'); return; }
+  if (!rawTitle) { showToast('Введи название', 'warning'); return; }
   if (!price || isNaN(price)) { showToast('Введи корректную цену', 'warning'); return; }
   if (!categories.length) { showToast('Выбери категорию', 'warning'); return; }
+
+  if (checkForbiddenContent(rawTitle)) {
+    showToast('Название отклонено: запрещённый контент', 'error');
+    return;
+  }
+  if (checkForbiddenContent(rawDesc)) {
+    showToast('Описание отклонено: запрещённый контент', 'error');
+    return;
+  }
+
+  const title = censorText(rawTitle);
+  const desc = censorText(rawDesc);
+  const wasCensored = (title !== rawTitle) || (desc !== rawDesc);
 
   const newTask = {
     title, categories, price,
@@ -1378,7 +1577,11 @@ async function addTask() {
     document.getElementById('taskDeadline').value = '';
     document.getElementById('modalCategories').querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     showCheckAnim();
-    showToast('Задание опубликовано!');
+    if (wasCensored) {
+      showToast('Опубликовано. Часть текста скрыта', 'warning');
+    } else {
+      showToast('Задание опубликовано!');
+    }
   } catch (error) {
     showToast('Ошибка сохранения', 'error');
     console.error(error);
