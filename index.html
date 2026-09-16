@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -434,57 +433,43 @@ const BADGES = [
 
 const BAD_WORDS = [
   'хуй','хуя','хую','хуё','хуе','пизд','пизж','бля','блят','бляд',
-  'еба','ебал','ебан','ебат','ебет','ебут','ебуч','еби','ёба','ёбл','ёбу',
+  'еба','ебал','ебан','ебат','ебет','ебут','ебуч','еби','ёба','ёбa','ёбл','ёбу',
   'сука','суки','суке','суку','сучк','мудак','мудил','мраз','гандон','гондон',
-  'долбоеб','пидор','пидар','пидр','педик','шлюх','шлюш','проститут',
+  'долбоёб','долбоеб','пидор','пидар','пидр','педик','шлюх','шлюш','проститут',
   'нахуй','нахуя','похуй','охуе','ахуе','вхуя','залуп','манда','мандав','манде',
-  'сперм','говн','жоп','срак','срать','сру','насра','обосра',
-  'убей','убью','убейте','убить','зарежу','застрел','взорву',
-  'нарко','наркот','героин','кокаин','мефедрон','спайс',
+  'сперм','говн','жоп','жопa','срак','срать','сру','насра','обосра',
+  'убей','убью','убейте','убить','зарежу','застрел','взорву','взорвa',
+  'нарко','наркот','героин','кокаин','мефедрон','меф','спайс','соли для ванн',
   'марихуан','гашиш','анаша','амфетамин','метамфетамин','экстази','мдма','лсд',
-  'оружие','пистолет','автомат','патрон','гранат','взрывчатк','тротил',
-  'теракт','исламск','джихад','шахид','смертник',
-  'порно','секс','секса','сексом','минет','оргазм','эротик',
-  'интим','18+','xxx','хентай','голая','голый','раздева','стриптиз',
+  'продам траву','продаю траву','купить траву','купить меф','купить кокс',
+  'оружие','пистолет','автомат','патрон','гранат','взрывчатк','тротил','c4',
+  'теракт','терактa','исламск','джихад','шахид','смертник',
+  'порно','порнa','секс','секса','сексом','минет','анал','оргазм','эротик',
+  'интим','интим услуги','18+','xxx','хентай','голая','голый','раздева','стриптиз',
   'педофил','лоли','школьниц','несовершеннолетн',
-  'казино','ставки','букмекер','рулетк','1xbet'
+  'казино','ставки','букмекер','рулетк','покер на деньги','1xbet','казинo'
 ];
 
 const BAD_PHRASES = [
   'продам траву','продаю траву','купить траву','продаю меф','продам меф',
   'продаю кокс','продам кокс','купить кокс','продам нарко','продаю нарко',
   'продам оружие','продаю оружие','купить оружие','продам пистолет','продам автомат',
-  'закажи убийство','закажу убийство','найму убийцу','убей его','убей ее',
+  'закажи убийство','закажу убийство','найму убийцу','убей его','убей её','убей ее',
   'интим услуги','секс услуги','услуги интим','18+ контент',
-  'ставки на спорт','покер на деньги','играть в казино',
-  'продам аккаунт','продаю аккаунт','обнал','обналич','карта на продажу',
-  'взломать','взлом','ддос','ddos','ботнет','фишинг','скупка данных'
+  'ставки на спорт','покер на деньги','играть в казино'
 ];
-
-const WHITELIST = new Set([
-  'команда','команды','команде','команду','командой','командую','команда',
-  'командная','командный','командные','командовать','командование',
-  'командовать','командир','командиры','командиров',
-  'аналог','аналоги','аналогия','аналогичный','аналогичная','аналогичное',
-  'анализ','анализа','анализу','анализом','анализе','анализы',
-  'аналитик','аналитики','аналитику','аналитика','аналитике','аналитикой',
-  'аналитический','аналитическая',
-  'сексолог','сексология','сексологический',
-  'убийственный','убийственная','убийственно','убийственен',
-  'порошок','порошка','порошку','порошком','порошковый'
-]);
 
 function normalize(text) {
   return String(text == null ? '' : text)
     .toLowerCase()
-    .replace(/ё/g, 'е')
-    .replace(/@/g, 'a')
-    .replace(/0/g, 'o')
-    .replace(/1/g, 'i')
-    .replace(/3/g, 'e')
-    .replace(/4/g, 'a')
-    .replace(/5/g, 's')
-    .replace(/7/g, 't')
+    .replace(/[ё]/g, 'е')
+    .replace(/[@]/g, 'a')
+    .replace(/[0]/g, 'o')
+    .replace(/[1]/g, 'i')
+    .replace(/[3]/g, 'e')
+    .replace(/[4]/g, 'a')
+    .replace(/[5]/g, 's')
+    .replace(/[7]/g, 't')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -493,80 +478,94 @@ function stripNonLetters(text) {
   return normalize(text).replace(/[^a-zа-я0-9 ]/g, '');
 }
 
-function isWhitelisted(word) {
-  if (!word) return false;
-  return WHITELIST.has(word);
-}
-
-function checkForbiddenContent(text) {
-  if (!text) return false;
+function checkBadContent(text) {
+  if (!text) return null;
   const normalized = normalize(text);
   const stripped = stripNonLetters(text);
 
   for (const phrase of BAD_PHRASES) {
-    const p = phrase.replace(/[^a-zа-я0-9 ]/g, '');
-    if (normalized.includes(phrase) || stripped.includes(p)) {
-      return true;
+    if (normalized.includes(phrase) || stripped.includes(phrase.replace(/[^a-zа-я0-9 ]/g, ''))) {
+      return 'Запрещённый контент: обнаружена недопустимая фраза';
     }
   }
 
-  const linkRegex = /(https?:\/\/|www\.|t\.me\/|wa\.me\/|telegram\.me\/)/i;
-  if (linkRegex.test(text)) return true;
+  const words = stripped.split(/\s+/);
+  for (const w of words) {
+    for (const bad of BAD_WORDS) {
+      const badNorm = normalize(bad);
+      if (w === badNorm) {
+        return 'Запрещённый контент: недопустимое слово';
+      }
+      if (w.length >= 4 && badNorm.length >= 4 && w.includes(badNorm)) {
+        return 'Запрещённый контент: недопустимое слово';
+      }
+    }
+  }
 
-  const phoneRegex = /(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}/;
-  if (phoneRegex.test(text)) return true;
-
-  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
-  if (emailRegex.test(text)) return true;
-
-  const cardRegex = /\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}\b/;
-  if (cardRegex.test(text)) return true;
-
-  return false;
-}
-
-function censorText(text) {
-  if (!text) return text;
-  let result = String(text);
+  const leet = normalized
+    .replace(/[^a-zа-я0-9]/g, '')
+    .replace(/[0o]/g, 'о')
+    .replace(/[a]/g, 'а')
+    .replace(/[e]/g, 'е')
+    .replace(/[k]/g, 'к')
+    .replace(/[x]/g, 'х')
+    .replace(/[c]/g, 'с')
+    .replace(/[p]/g, 'р')
+    .replace(/[h]/g, 'н')
+    .replace(/[m]/g, 'м')
+    .replace(/[t]/g, 'т')
+    .replace(/[b]/g, 'в');
 
   for (const bad of BAD_WORDS) {
-    const regex = new RegExp(`(^|[^a-zA-Zа-яА-Я0-9])(${bad})(?=$|[^a-zA-Zа-яА-Я0-9])`, 'gi');
-    result = result.replace(regex, (m, p1, p2) => {
-      if (isWhitelisted(p2.toLowerCase())) return m;
-      return p1 + '*'.repeat(p2.length);
-    });
-  }
-
-  return result;
-}
-
-function containsBadWords(text) {
-  if (!text) return false;
-  const stripped = stripNonLetters(text);
-  const words = stripped.split(/\s+/).filter(Boolean);
-
-  for (const w of words) {
-    if (isWhitelisted(w)) continue;
-    for (const bad of BAD_WORDS) {
-      const badNorm = normalize(bad).replace(/[^a-zа-я0-9]/g, '');
-      if (!badNorm) continue;
-      if (w === badNorm) return true;
-      if (badNorm.length >= 5 && w.length === badNorm.length && w.includes(badNorm)) return true;
+    const badLeet = normalize(bad)
+      .replace(/[^a-zа-я0-9]/g, '')
+      .replace(/[0o]/g, 'о')
+      .replace(/[a]/g, 'а')
+      .replace(/[e]/g, 'е')
+      .replace(/[k]/g, 'к')
+      .replace(/[x]/g, 'х')
+      .replace(/[c]/g, 'с')
+      .replace(/[p]/g, 'р')
+      .replace(/[h]/g, 'н')
+      .replace(/[m]/g, 'м')
+      .replace(/[t]/g, 'т')
+      .replace(/[b]/g, 'в');
+    if (badLeet.length >= 4 && leet.includes(badLeet)) {
+      return 'Запрещённый контент: недопустимое слово';
     }
   }
 
-  return false;
+  const linkRegex = /(https?:\/\/|www\.|t\.me\/|wa\.me\/|telegram\.me\/)/gi;
+  if (linkRegex.test(text)) {
+    return 'Запрещённый контент: ссылки запрещены';
+  }
+
+  const phoneRegex = /(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}/;
+  if (phoneRegex.test(text)) {
+    return 'Запрещённый контент: номер телефона запрещён';
+  }
+
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+  if (emailRegex.test(text)) {
+    return 'Запрещённый контент: email запрещён';
+  }
+
+  const cardRegex = /\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}\b/;
+  if (cardRegex.test(text)) {
+    return 'Запрещённый контент: номера карт запрещены';
+  }
+
+  return null;
 }
 
-function validateContent(text, label) {
-  if (!text) return null;
-  if (checkForbiddenContent(text)) {
-    return `${label}: запрещённый контент`;
+function filterText(text) {
+  if (!text) return text;
+  let result = text;
+  for (const bad of BAD_WORDS) {
+    const regex = new RegExp(bad, 'gi');
+    result = result.replace(regex, '***');
   }
-  if (containsBadWords(text)) {
-    return `${label}: недопустимые слова`;
-  }
-  return null;
+  return result;
 }
 
 function escapeHtml(s) {
@@ -657,9 +656,9 @@ async function handleAuth() {
     return;
   }
   if (!isLogin) {
-    const nameError = validateContent(name, 'Имя');
-    if (nameError) {
-      errorEl.textContent = nameError;
+    const bad = checkBadContent(name);
+    if (bad) {
+      errorEl.textContent = 'Имя содержит недопустимые слова';
       errorEl.classList.add('show');
       return;
     }
@@ -1242,16 +1241,14 @@ function closeChatModal() {
 
 async function sendChatMessage() {
   const input = document.getElementById('chatInput');
-  const rawText = input.value.trim();
-  if (!rawText || !currentChatId || !currentUser) return;
+  const text = input.value.trim();
+  if (!text || !currentChatId || !currentUser) return;
 
-  if (checkForbiddenContent(rawText)) {
-    showToast('Сообщение отклонено: запрещённый контент', 'error');
+  const bad = checkBadContent(text);
+  if (bad) {
+    showToast('Сообщение отклонено: недопустимый контент', 'error');
     return;
   }
-
-  const text = censorText(rawText);
-  const wasCensored = text !== rawText;
 
   const msg = {
     id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -1265,9 +1262,6 @@ async function sendChatMessage() {
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     });
     userStats.chatsOpened = Math.max(userStats.chatsOpened, 1);
-    if (wasCensored) {
-      showToast('Часть текста скрыта за недопустимые слова', 'warning');
-    }
 
     const chatDoc = await db.collection('chats').doc(currentChatId).get();
     const data = chatDoc.data() || {};
@@ -1371,26 +1365,24 @@ function formatTime(date) {
 }
 
 async function addTask() {
-  const rawTitle = document.getElementById('taskTitle').value.trim();
+  const title = document.getElementById('taskTitle').value.trim();
   const price = parseInt(document.getElementById('taskPrice').value.trim());
-  const rawDesc = document.getElementById('taskDesc').value.trim();
+  const desc = document.getElementById('taskDesc').value.trim();
   const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
 
-  if (!rawTitle) { showToast('Введи название', 'warning'); return; }
+  if (!title) { showToast('Введи название', 'warning'); return; }
   if (!price || isNaN(price)) { showToast('Введи корректную цену', 'warning'); return; }
 
-  if (checkForbiddenContent(rawTitle)) {
-    showToast('Название отклонено: запрещённый контент', 'error');
+  const badTitle = checkBadContent(title);
+  if (badTitle) {
+    showToast('Название отклонено: недопустимый контент', 'error');
     return;
   }
-  if (checkForbiddenContent(rawDesc)) {
-    showToast('Описание отклонено: запрещённый контент', 'error');
+  const badDesc = checkBadContent(desc);
+  if (badDesc) {
+    showToast('Описание отклонено: недопустимый контент', 'error');
     return;
   }
-
-  const title = censorText(rawTitle);
-  const desc = censorText(rawDesc);
-  const wasCensored = (title !== rawTitle) || (desc !== rawDesc);
 
   const newTask = {
     title, price,
@@ -1418,11 +1410,7 @@ async function addTask() {
     document.getElementById('taskDesc').value = '';
     document.getElementById('taskDeadline').value = '';
     showCheckAnim();
-    if (wasCensored) {
-      showToast('Опубликовано. Часть текста скрыта', 'warning');
-    } else {
-      showToast('Задание опубликовано!');
-    }
+    showToast('Задание опубликовано!');
   } catch (error) {
     showToast('Ошибка сохранения', 'error');
     console.error(error);
@@ -1431,4 +1419,3 @@ async function addTask() {
 </script>
 </body>
 </html>
-```
