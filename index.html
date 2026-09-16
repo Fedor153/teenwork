@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -542,6 +543,15 @@ const WHITELIST = new Set([
   'порошок','порошка','порошку','порошком','порошковый'
 ]);
 
+const INTEREST_MATCHERS = {
+  'тексты': ['текст', 'статья', 'рерайт', 'слоган', 'отзыв', 'контент', 'написан'],
+  'дизайн': ['дизайн', 'canva', 'обложк', 'баннер', 'логотип', 'фото', 'мем', 'оформлен'],
+  'соцсети': ['соцсет', 'пост', 'инстаграм', 'instagram', 'телеграм', 'telegram', 'хэштег', 'коммент', 'модерац'],
+  'монтаж': ['монтаж', 'видео', 'tiktok', 'тикток', 'youtube', 'ютуб', 'нарезк', 'ролик'],
+  'учёба': ['урок', 'дз', 'домашк', 'конспект', 'карточк', 'учёб', 'школ'],
+  'переводы': ['перевод', 'translate', 'английск', 'язык']
+};
+
 function normalize(text) {
   return String(text == null ? '' : text)
     .toLowerCase()
@@ -626,6 +636,14 @@ function containsBadWords(text) {
   return false;
 }
 
+function categoryMatchesInterest(cat, interest) {
+  const c = String(cat || '').toLowerCase();
+  const key = String(interest || '').toLowerCase();
+  const stems = INTEREST_MATCHERS[key];
+  if (!c || !stems) return false;
+  return stems.some(s => c.includes(s));
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -705,6 +723,7 @@ function toggleAuth() {
 }
 
 async function handleAuth() {
+  if (authLoading) return;
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value.trim();
   const name = document.getElementById('authName').value.trim();
@@ -763,9 +782,11 @@ async function handleAuth() {
     else msg = err.message;
     errorEl.textContent = msg;
     errorEl.classList.add('show');
+  } finally {
     authLoading = false;
-    document.getElementById('authBtn').disabled = false;
-    document.getElementById('authBtn').textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+    const btn = document.getElementById('authBtn');
+    btn.disabled = false;
+    btn.textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
   }
 }
 
@@ -976,10 +997,16 @@ function getFilteredTasks() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
   let filtered = tasks;
   if (search) filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(search));
-  if (filterCategories.length) filtered = filtered.filter(t => (t.categories || []).some(c => filterCategories.includes(c)));
+  if (filterCategories.length) {
+    filtered = filtered.filter(t =>
+      (t.categories || []).some(c => filterCategories.includes(c))
+    );
+  }
   if (currentTab === 'recommended') {
-    const interests = ['Тексты', 'Дизайн', 'Соцсети', 'Монтаж', 'Учёба', 'Переводы'];
-    filtered = filtered.filter(t => (t.categories || []).some(c => interests.some(i => c.includes(i) || i.includes(c))));
+    const interests = ['тексты', 'дизайн', 'соцсети', 'монтаж', 'учёба', 'переводы'];
+    filtered = filtered.filter(t =>
+      (t.categories || []).some(c => interests.some(i => categoryMatchesInterest(c, i)))
+    );
   }
   return filtered;
 }
@@ -1056,6 +1083,11 @@ function renderTasks() {
 }
 
 function openDeleteModal(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task || !currentUser || task.authorId !== currentUser.uid) {
+    showToast('Можно удалять только свои задания', 'warning');
+    return;
+  }
   pendingDeleteTaskId = taskId;
   document.getElementById('deleteModal').classList.add('show');
 }
@@ -1066,25 +1098,38 @@ function closeDeleteModal() {
 }
 
 async function confirmDeleteTask() {
-  if (!pendingDeleteTaskId) return;
+  if (!pendingDeleteTaskId || !currentUser) return;
   const taskId = pendingDeleteTaskId;
   closeDeleteModal();
 
   try {
-    await db.collection('tasks').doc(taskId).delete();
+    const taskRef = db.collection('tasks').doc(taskId);
+    await db.runTransaction(async (tx) => {
+      const doc = await tx.get(taskRef);
+      if (!doc.exists) throw new Error('Задание не найдено');
+      const data = doc.data();
+      if (data.authorId !== currentUser.uid) {
+        throw new Error('Нет прав на удаление');
+      }
+      tx.delete(taskRef);
+    });
     tasks = tasks.filter(t => t.id !== taskId);
     renderTasks();
     updateProfileStats();
     showToast('Задание удалено');
   } catch (e) {
     console.error(e);
-    showToast('Не удалось удалить', 'error');
+    showToast(e.message === 'Нет прав на удаление' ? 'Можно удалять только свои задания' : 'Не удалось удалить', 'error');
   }
 }
 
 async function applyForTask(taskId, btn) {
   const task = tasks.find(t => t.id === taskId);
   if (!task || !currentUser) return;
+  if (task.authorId === currentUser.uid) {
+    showToast('Нельзя откликаться на своё задание', 'warning');
+    return;
+  }
   if ((task.responses || []).some(r => r.executorId === currentUser.uid)) {
     showToast('Ты уже откликнулся', 'warning');
     return;
@@ -1128,6 +1173,10 @@ async function applyForTask(taskId, btn) {
 function openResponsesModal(taskId) {
   const task = tasks.find(t => t.id === taskId);
   if (!task) return;
+  if (!currentUser || task.authorId !== currentUser.uid) {
+    showToast('Просматривать отклики может только автор задания', 'warning');
+    return;
+  }
   document.getElementById('responsesTitle').textContent = `Отклики на "${task.title}"`;
   const list = document.getElementById('responsesList');
   if (!(task.responses || []).length) {
@@ -1158,12 +1207,16 @@ function closeResponsesModal() {
 }
 
 async function setResponseStatus(taskId, executorId, status) {
+  if (!currentUser) return;
   const taskRef = db.collection('tasks').doc(taskId);
   try {
     await db.runTransaction(async (tx) => {
       const doc = await tx.get(taskRef);
       if (!doc.exists) throw new Error('Задание не найдено');
       const data = doc.data();
+      if (data.authorId !== currentUser.uid) {
+        throw new Error('Только автор задания может менять статус отклика');
+      }
       const responses = Array.isArray(data.responses) ? data.responses : [];
       const updated = responses.map(r =>
         r.executorId === executorId ? { ...r, status } : r
@@ -1183,7 +1236,9 @@ async function setResponseStatus(taskId, executorId, status) {
     showToast(status === 'accepted' ? 'Исполнитель принят' : 'Отклик отклонён');
   } catch (e) {
     console.error(e);
-    showToast('Ошибка обновления', 'error');
+    showToast(e.message === 'Только автор задания может менять статус отклика'
+      ? e.message
+      : 'Ошибка обновления', 'error');
   }
 }
 
@@ -1238,6 +1293,10 @@ function renderChats() {
   }).join('');
 }
 
+function buildChatId(uidA, uidB) {
+  return [uidA, uidB].sort().join('__');
+}
+
 async function openChatWith(otherUid, otherName) {
   if (!currentUser) { showToast('Войди, чтобы писать', 'warning'); return; }
   if (!otherUid || otherUid === 'unknown') {
@@ -1246,19 +1305,14 @@ async function openChatWith(otherUid, otherName) {
   }
   if (otherUid === currentUser.uid) { showToast('Это твой собственный чат', 'warning'); return; }
 
+  const chatId = buildChatId(currentUser.uid, otherUid);
+
   try {
-    const snap = await db.collection('chats')
-      .where('participants', 'array-contains', currentUser.uid)
-      .get();
+    const chatRef = db.collection('chats').doc(chatId);
+    const snap = await chatRef.get();
 
-    let chatDoc = null;
-    snap.forEach(doc => {
-      const p = doc.data().participants || [];
-      if (p.includes(otherUid) && p.includes(currentUser.uid)) chatDoc = doc;
-    });
-
-    if (!chatDoc) {
-      const ref = await db.collection('chats').add({
+    if (!snap.exists) {
+      await chatRef.set({
         participants: [currentUser.uid, otherUid],
         participantNames: {
           [currentUser.uid]: userName,
@@ -1267,12 +1321,22 @@ async function openChatWith(otherUid, otherName) {
         messages: [],
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      openChatById(ref.id);
+      }, { merge: true });
+
       userStats.chatsOpened++;
+      updateProfileStats();
     } else {
-      openChatById(chatDoc.id);
+      const data = snap.data() || {};
+      const names = data.participantNames || {};
+      const patch = {};
+      if (!names[currentUser.uid]) patch[`participantNames.${currentUser.uid}`] = userName;
+      if (!names[otherUid]) patch[`participantNames.${otherUid}`] = otherName;
+      if (Object.keys(patch).length) {
+        try { await chatRef.update(patch); } catch (_) {}
+      }
     }
+
+    openChatById(chatId);
   } catch (e) {
     console.error(e);
     showToast('Ошибка открытия чата', 'error');
@@ -1384,28 +1448,15 @@ async function deleteChatMessage(msgId) {
 
   try {
     const chatRef = db.collection('chats').doc(currentChatId);
-    const doc = await chatRef.get();
-    if (!doc.exists) return;
-    const data = doc.data() || {};
-    const messages = Array.isArray(data.messages) ? data.messages : [];
-
-    const target = messages.find(m => m.id === msgId);
-    if (!target) return;
-    if (target.senderId !== currentUser.uid) {
-      showToast('Можно удалять только свои сообщения', 'warning');
-      return;
-    }
-
-    const updated = messages.filter(m => m.id !== msgId);
-
     await db.runTransaction(async (tx) => {
       const fresh = await tx.get(chatRef);
       if (!fresh.exists) throw new Error('Чат не найден');
       const freshData = fresh.data() || {};
       const freshMessages = Array.isArray(freshData.messages) ? freshData.messages : [];
-      const freshTarget = freshMessages.find(m => m.id === msgId);
-      if (freshTarget && freshTarget.senderId !== currentUser.uid) {
-        throw new Error('Нет прав на удаление');
+      const target = freshMessages.find(m => m.id === msgId);
+      if (!target) return;
+      if (target.senderId !== currentUser.uid) {
+        throw new Error('Можно удалять только свои сообщения');
       }
       const filtered = freshMessages.filter(m => m.id !== msgId);
       tx.update(chatRef, {
@@ -1417,7 +1468,9 @@ async function deleteChatMessage(msgId) {
     showToast('Сообщение удалено');
   } catch (e) {
     console.error(e);
-    showToast('Не удалось удалить сообщение', 'error');
+    showToast(e.message === 'Можно удалять только свои сообщения'
+      ? e.message
+      : 'Не удалось удалить сообщение', 'error');
   }
 }
 
@@ -1493,13 +1546,17 @@ function closeAddModal() { document.getElementById('addModal').classList.remove(
 
 function openFilterModal() {
   document.getElementById('filterModal').classList.add('show');
-  renderCategoryChips('filterCategories');
+  renderCategoryChips('filterCategories', filterCategories);
 }
 function closeFilterModal() { document.getElementById('filterModal').classList.remove('show'); }
 
-function renderCategoryChips(containerId) {
+function renderCategoryChips(containerId, preselected) {
   const container = document.getElementById(containerId);
-  container.innerHTML = allCategories.map(c => `<span class="modal-category" onclick="toggleCategory(this)">${escapeHtml(c)}</span>`).join('');
+  const selected = new Set(Array.isArray(preselected) ? preselected : []);
+  container.innerHTML = allCategories.map(c => {
+    const cls = selected.has(c) ? 'modal-category selected' : 'modal-category';
+    return `<span class="${cls}" onclick="toggleCategory(this)">${escapeHtml(c)}</span>`;
+  }).join('');
 }
 function toggleCategory(el) { el.classList.toggle('selected'); }
 function getSelectedCategories(containerId) {
@@ -1526,15 +1583,33 @@ function formatTime(date) {
   }
 }
 
+function parsePrice(raw) {
+  const cleaned = String(raw || '').replace(',', '.').trim();
+  if (!cleaned) return null;
+  const num = Number(cleaned);
+  if (!isFinite(num)) return null;
+  const rounded = Math.round(num);
+  if (rounded <= 0) return null;
+  return rounded;
+}
+
 async function addTask() {
   const rawTitle = document.getElementById('taskTitle').value.trim();
-  const price = parseInt(document.getElementById('taskPrice').value.trim());
+  const rawPriceStr = document.getElementById('taskPrice').value.trim();
+  const rawPriceNum = Number(String(rawPriceStr).replace(',', '.').trim());
   const rawDesc = document.getElementById('taskDesc').value.trim();
   const deadline = document.getElementById('taskDeadline').value.trim() || 'Не указан';
   const categories = getSelectedCategories('modalCategories');
 
   if (!rawTitle) { showToast('Введи название', 'warning'); return; }
-  if (!price || isNaN(price)) { showToast('Введи корректную цену', 'warning'); return; }
+
+  const price = parsePrice(rawPriceStr);
+  if (price === null) {
+    showToast('Введи корректную цену (целое положительное число)', 'warning');
+    return;
+  }
+  const wasRounded = isFinite(rawPriceNum) && Math.abs(rawPriceNum - price) >= 0.5;
+
   if (!categories.length) { showToast('Выбери категорию', 'warning'); return; }
 
   if (checkForbiddenContent(rawTitle)) {
@@ -1577,8 +1652,12 @@ async function addTask() {
     document.getElementById('taskDeadline').value = '';
     document.getElementById('modalCategories').querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     showCheckAnim();
-    if (wasCensored) {
+    if (wasCensored && wasRounded) {
+      showToast('Опубликовано. Цена округлена, часть текста скрыта', 'warning');
+    } else if (wasCensored) {
       showToast('Опубликовано. Часть текста скрыта', 'warning');
+    } else if (wasRounded) {
+      showToast(`Опубликовано. Цена округлена до ${price} ₽`, 'warning');
     } else {
       showToast('Задание опубликовано!');
     }
@@ -1590,3 +1669,4 @@ async function addTask() {
 </script>
 </body>
 </html>
+```
