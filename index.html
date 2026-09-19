@@ -610,10 +610,13 @@ function censorText(text) {
   let result = String(text);
 
   for (const bad of BAD_WORDS) {
-    const regex = new RegExp(`(^|[^a-zA-Zа-яА-Я0-9])(${bad})(?=$|[^a-zA-Zа-яА-Я0-9])`, 'gi');
-    result = result.replace(regex, (m, p1, p2) => {
-      if (isWhitelisted(p2.toLowerCase())) return m;
-      return p1 + '*'.repeat(p2.length);
+    const regex = new RegExp(
+      `(^|[^a-zA-Zа-яА-Я0-9])([a-zA-Zа-яА-Я0-9]*${bad}[a-zA-Zа-яА-Я0-9]*)(?=$|[^a-zA-Zа-яА-Я0-9])`,
+      'gi'
+    );
+    result = result.replace(regex, (m, p1, token) => {
+      if (isWhitelisted(token.toLowerCase())) return m;
+      return p1 + '*'.repeat(token.length);
     });
   }
 
@@ -631,7 +634,7 @@ function containsBadWords(text) {
       const badNorm = normalize(bad).replace(/[^a-zа-я0-9]/g, '');
       if (!badNorm) continue;
       if (w === badNorm) return true;
-      if (badNorm.length >= 5 && w.length === badNorm.length && w.includes(badNorm)) return true;
+      if (badNorm.length >= 4 && w.length >= badNorm.length && w.includes(badNorm)) return true;
     }
   }
 
