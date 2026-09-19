@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>TeenWork — Работа для подростков</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,7 +39,7 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  body { background: var(--bg); min-height: 100vh; padding: 16px; padding-bottom: 90px; color: var(--text); -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); min-height: 100vh; padding: 16px; padding-bottom: calc(90px + env(safe-area-inset-bottom)); color: var(--text); -webkit-tap-highlight-color: transparent; }
 
   .splash { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 50%, #4C1D95 100%); z-index: 9999; transition: opacity .8s ease; overflow: hidden; }
   .splash::before, .splash::after { content: ''; position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; animation: floatBlob 8s ease-in-out infinite; }
@@ -143,18 +143,18 @@
   .btn-apply:active { transform: scale(.97); }
   .btn-apply:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; box-shadow: none; }
   .btn-apply.success { background: var(--grad-green); box-shadow: 0 4px 12px rgba(16,185,129,.3); }
-  .btn-chat { padding: 12px 14px; background: #F3F4F6; color: var(--violet); border: none; border-radius: 12px; font-size: 18px; cursor: pointer; font-family: inherit; transition: transform .15s; }
+  .btn-chat { min-width: 44px; min-height: 44px; padding: 12px 14px; background: #F3F4F6; color: var(--violet); border: none; border-radius: 12px; font-size: 18px; cursor: pointer; font-family: inherit; transition: transform .15s; }
   .btn-chat:active { transform: scale(.94); }
-  .btn-delete { padding: 12px 14px; background: #FEE2E2; color: #DC2626; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-family: inherit; transition: transform .15s; }
+  .btn-delete { min-width: 44px; min-height: 44px; padding: 12px 14px; background: #FEE2E2; color: #DC2626; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-family: inherit; transition: transform .15s; }
   .btn-delete:active { transform: scale(.94); }
 
-  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 8px 0 14px; border-top: 1px solid var(--divider); z-index: 50; box-shadow: 0 -4px 20px rgba(124,58,237,.08); }
-  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: #9CA3AF; cursor: pointer; padding: 6px 14px; border: none; background: none; font-family: inherit; font-weight: 600; transition: color .2s; border-radius: 12px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 8px 0 calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--divider); z-index: 50; box-shadow: 0 -4px 20px rgba(124,58,237,.08); }
+  .nav-item { min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; color: #9CA3AF; cursor: pointer; padding: 6px 14px; border: none; background: none; font-family: inherit; font-weight: 600; transition: color .2s; border-radius: 12px; }
   .nav-item.active { color: var(--violet); }
   .nav-item.active .nav-icon { transform: scale(1.15); filter: drop-shadow(0 4px 8px rgba(124,58,237,.4)); }
   .nav-item .nav-icon { font-size: 22px; transition: transform .2s; }
 
-  .fab { position: fixed; bottom: 88px; right: 20px; padding: 15px 22px; background: var(--grad-main); color: white; border: none; border-radius: 16px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(124,58,237,.4); display: flex; align-items: center; gap: 8px; z-index: 100; font-family: inherit; transition: transform .2s, box-shadow .2s; letter-spacing: .2px; }
+  .fab { position: fixed; bottom: calc(88px + env(safe-area-inset-bottom)); right: 20px; padding: 15px 22px; background: var(--grad-main); color: white; border: none; border-radius: 16px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(124,58,237,.4); display: flex; align-items: center; gap: 8px; z-index: 100; font-family: inherit; transition: transform .2s, box-shadow .2s; letter-spacing: .2px; }
   .fab:active { transform: scale(.96); }
   .fab:hover { box-shadow: 0 12px 32px rgba(124,58,237,.5); }
 
@@ -220,9 +220,9 @@
   .chat-list-last { font-size: 13px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
   .chat-list-time { font-size: 11px; color: #9CA3AF; flex-shrink: 0; font-weight: 600; }
 
-  .chat-modal { display: flex; flex-direction: column; height: 80vh; max-height: 700px; padding: 0; overflow: hidden; }
+  .chat-modal { display: flex; flex-direction: column; height: 80vh; height: 100dvh; max-height: 700px; padding: 0; overflow: hidden; }
   .chat-header { background: var(--grad-main); color: white; padding: 16px; display: flex; align-items: center; gap: 10px; }
-  .chat-header .chat-back, .chat-header .chat-close { background: rgba(255,255,255,.15); border: none; color: white; font-size: 18px; cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+  .chat-header .chat-back, .chat-header .chat-close { background: rgba(255,255,255,.15); border: none; color: white; font-size: 18px; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background .2s; flex-shrink: 0; }
   .chat-header .chat-back:hover, .chat-header .chat-close:hover { background: rgba(255,255,255,.25); }
   .chat-header .chat-title { flex: 1; font-weight: 700; font-size: 16px; word-break: break-word; letter-spacing: -.2px; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #F8F7FF; }
@@ -232,7 +232,7 @@
   .chat-msg .chat-time { font-size: 10px; opacity: .75; margin-top: 4px; display: block; font-weight: 500; }
   .chat-msg .chat-del { display: inline-block; margin-left: 8px; font-size: 12px; opacity: .65; cursor: pointer; transition: opacity .15s; user-select: none; }
   .chat-msg .chat-del:hover { opacity: 1; }
-  .chat-input-row { display: flex; padding: 12px; gap: 8px; background: white; border-top: 1px solid var(--divider); }
+  .chat-input-row { display: flex; padding: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; background: white; border-top: 1px solid var(--divider); }
   .chat-input-row input { flex: 1; padding: 13px 18px; border: 2px solid var(--divider); border-radius: 26px; font-size: 14px; outline: none; background: #FAFAFF; font-family: inherit; transition: all .2s; }
   .chat-input-row input:focus { border-color: var(--violet); background: white; }
   .chat-input-row button { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--grad-main); color: white; font-size: 18px; cursor: pointer; box-shadow: 0 4px 12px rgba(124,58,237,.3); transition: transform .15s; }
@@ -244,7 +244,7 @@
   .empty-state .title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 6px; letter-spacing: -.2px; }
   .empty-state .desc { font-size: 14px; line-height: 1.4; }
 
-  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--grad-green); color: white; padding: 14px 22px; border-radius: 14px; font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(16,185,129,.4); opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(.34,1.56,.64,1); z-index: 300; display: flex; align-items: center; gap: 8px; max-width: 90vw; }
+  .toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--grad-green); color: white; padding: 14px 22px; border-radius: 14px; font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(16,185,129,.4); opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(.34,1.56,.64,1); z-index: 300; display: flex; align-items: center; gap: 8px; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.error { background: var(--grad-red); box-shadow: 0 8px 24px rgba(220,38,38,.4); }
   .toast.warning { background: var(--grad-warm); box-shadow: 0 8px 24px rgba(245,158,11,.4); }
@@ -261,7 +261,16 @@
   @keyframes checkPop { 0% { transform: scale(0) rotate(-90deg); } 100% { transform: scale(1) rotate(0); } }
 
   @media (max-width: 480px) { body { padding: 12px; } .splash .app-name { font-size: 34px; } }
-  @media (min-width: 768px) { body { max-width: 620px; margin: 0 auto; } }
+  @media (min-width: 768px) { body { max-width: 640px; margin: 0 auto; } }
+  @media (min-width: 1024px) {
+    body { max-width: 960px; }
+    #tasksContainer {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    #tasksContainer .task-card { margin-bottom: 0; }
+  }
 </style>
 </head>
 <body>
@@ -1295,9 +1304,8 @@ function renderChats() {
     const otherId = (chat.participants || []).find(id => id !== currentUser.uid);
     const otherName = (chat.participantNames && chat.participantNames[otherId]) || 'Пользователь';
     const isSupport = otherId === SUPPORT_UID;
-    const last = (chat.messages || []).slice(-1)[0];
-    const lastText = last ? last.text : 'Нет сообщений';
-    const time = last?.time ? formatTime(new Date(last.time)) : '';
+    const lastText = chat.lastMessage || 'Нет сообщений';
+    const time = chat.lastUpdated?.toDate ? formatTime(chat.lastUpdated.toDate()) : '';
     return `
       <div class="chat-list-item" onclick="openChatById('${escapeJs(chat.id)}')">
         <div class="chat-avatar ${isSupport ? 'support' : ''}">${isSupport ? '💚' : escapeHtml((otherName || '?')[0].toUpperCase())}</div>
@@ -1336,10 +1344,10 @@ async function openChatWith(otherUid, otherName) {
           [currentUser.uid]: userName,
           [otherUid]: otherName
         },
-        messages: [],
+        lastMessage: 'Нет сообщений',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      });
 
       userStats.chatsOpened++;
       updateProfileStats();
@@ -1349,6 +1357,7 @@ async function openChatWith(otherUid, otherName) {
       const patch = {};
       if (!names[currentUser.uid]) patch[`participantNames.${currentUser.uid}`] = userName;
       if (!names[otherUid]) patch[`participantNames.${otherUid}`] = otherName;
+      if (!data.lastMessage) patch['lastMessage'] = 'Нет сообщений';
       if (Object.keys(patch).length) {
         try { await chatRef.update(patch); } catch (_) {}
       }
@@ -1374,28 +1383,57 @@ function openChatById(chatId) {
     `<div style="text-align:center; color:#9CA3AF; font-size:13px;">Загрузка…</div>`;
 
   if (currentChatUnsub) currentChatUnsub();
-  currentChatUnsub = db.collection('chats').doc(chatId).onSnapshot(doc => {
-    if (!doc.exists) return;
-    const data = doc.data();
-    const otherId = (data.participants || []).find(id => id !== currentUser.uid);
-    const otherName = (data.participantNames && data.participantNames[otherId]) || 'Пользователь';
-    document.getElementById('chatTitle').textContent = otherName;
 
-    const messages = data.messages || [];
+  const chatRef = db.collection('chats').doc(chatId);
+  let chatDocData = null;
+  let messagesList = [];
+
+  const renderMessages = () => {
     const box = document.getElementById('chatMessages');
-    if (!messages.length) {
+    if (!chatDocData) return;
+
+    if (!messagesList.length) {
       box.innerHTML = `<div style="text-align:center; color:#9CA3AF; padding:30px; font-size:14px;">Нет сообщений. Напиши первым! 👋</div>`;
-    } else {
-      box.innerHTML = messages.map(m => {
-        const isMe = m.senderId === currentUser.uid;
-        const delBtn = isMe
-          ? `<span class="chat-del" onclick="deleteChatMessage('${escapeJs(m.id)}')" title="Удалить">🗑</span>`
-          : '';
-        return `<div class="chat-msg ${isMe ? 'me' : 'other'}">${escapeHtml(m.text)}<span class="chat-time">${escapeHtml(formatTime(new Date(m.time)))}${delBtn}</span></div>`;
-      }).join('');
-      box.scrollTop = box.scrollHeight;
+      return;
     }
+
+    box.innerHTML = messagesList.map(m => {
+      const isMe = m.senderId === currentUser.uid;
+      const delBtn = isMe
+        ? `<span class="chat-del" onclick="deleteChatMessage('${escapeJs(m.id)}')" title="Удалить">🗑</span>`
+        : '';
+      return `<div class="chat-msg ${isMe ? 'me' : 'other'}">${escapeHtml(m.text)}<span class="chat-time">${escapeHtml(formatTime(new Date(m.time)))}${delBtn}</span></div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  };
+
+  const docUnsub = chatRef.onSnapshot(doc => {
+    if (!doc.exists) return;
+    chatDocData = doc.data();
+    const otherId = (chatDocData.participants || []).find(id => id !== currentUser.uid);
+    const otherName = (chatDocData.participantNames && chatDocData.participantNames[otherId]) || 'Пользователь';
+    document.getElementById('chatTitle').textContent = otherName;
+    renderMessages();
   });
+
+  const messagesUnsub = chatRef.collection('messages')
+    .orderBy('time', 'asc')
+    .onSnapshot(snapshot => {
+      messagesList = snapshot.docs.map(d => ({
+        id: d.id,
+        text: d.data().text || '',
+        senderId: d.data().senderId || '',
+        time: d.data().time || new Date().toISOString()
+      }));
+      renderMessages();
+    }, err => {
+      console.warn('messages listener error', err);
+    });
+
+  currentChatUnsub = () => {
+    docUnsub();
+    messagesUnsub();
+  };
 }
 
 function closeChatModal() {
@@ -1418,36 +1456,44 @@ async function sendChatMessage() {
   const wasCensored = text !== rawText;
 
   const msg = {
-    id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-    text, senderId: currentUser.uid,
-    time: new Date().toISOString()
+    senderId: currentUser.uid,
+    text,
+    time: new Date().toISOString(),
+    hasPersonalData: false
   };
+
   input.value = '';
+
   try {
-    await db.collection('chats').doc(currentChatId).update({
-      messages: firebase.firestore.FieldValue.arrayUnion(msg),
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    const chatRef = db.collection('chats').doc(currentChatId);
+    await chatRef.collection('messages').add(msg);
+    await chatRef.update({
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+      lastMessage: text.slice(0, 120)
     });
+
     userStats.chatsOpened = Math.max(userStats.chatsOpened, 1);
+
     if (wasCensored) {
       showToast('Часть текста скрыта за недопустимые слова', 'warning');
     }
 
-    const chatDoc = await db.collection('chats').doc(currentChatId).get();
+    const chatDoc = await chatRef.get();
     const data = chatDoc.data() || {};
     const otherId = (data.participants || []).find(id => id !== currentUser.uid);
     if (otherId === SUPPORT_UID) {
       setTimeout(async () => {
         const reply = {
-          id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-          text: 'Привет! 👋 Это TeenWork Support. Опиши свою проблему, и мы поможем в течение дня. Если это что-то срочное — уточни детали и не передавай пароль или личные данные.',
           senderId: SUPPORT_UID,
-          time: new Date().toISOString()
+          text: 'Привет! 👋 Это TeenWork Support. Опиши свою проблему, и мы поможем в течение дня. Если это что-то срочное — уточни детали и не передавай пароль или личные данные.',
+          time: new Date().toISOString(),
+          hasPersonalData: false
         };
         try {
-          await db.collection('chats').doc(currentChatId).update({
-            messages: firebase.firestore.FieldValue.arrayUnion(reply),
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+          await chatRef.collection('messages').add(reply);
+          await chatRef.update({
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+            lastMessage: reply.text.slice(0, 120)
           });
         } catch (e) { console.warn(e); }
       }, 1200);
@@ -1466,29 +1512,35 @@ async function deleteChatMessage(msgId) {
 
   try {
     const chatRef = db.collection('chats').doc(currentChatId);
-    await db.runTransaction(async (tx) => {
-      const fresh = await tx.get(chatRef);
-      if (!fresh.exists) throw new Error('Чат не найден');
-      const freshData = fresh.data() || {};
-      const freshMessages = Array.isArray(freshData.messages) ? freshData.messages : [];
-      const target = freshMessages.find(m => m.id === msgId);
-      if (!target) return;
-      if (target.senderId !== currentUser.uid) {
-        throw new Error('Можно удалять только свои сообщения');
-      }
-      const filtered = freshMessages.filter(m => m.id !== msgId);
-      tx.update(chatRef, {
-        messages: filtered,
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    const msgRef = chatRef.collection('messages').doc(msgId);
+    const msgSnap = await msgRef.get();
+    if (!msgSnap.exists) {
+      showToast('Сообщение не найдено', 'warning');
+      return;
+    }
+    if (msgSnap.data().senderId !== currentUser.uid) {
+      showToast('Можно удалять только свои сообщения', 'warning');
+      return;
+    }
+
+    await msgRef.delete();
+
+    const remaining = await chatRef.collection('messages')
+      .orderBy('time', 'desc')
+      .limit(1)
+      .get();
+    if (!remaining.empty) {
+      await chatRef.update({
+        lastMessage: remaining.docs[0].data().text.slice(0, 120)
       });
-    });
+    } else {
+      await chatRef.update({ lastMessage: 'Нет сообщений' });
+    }
 
     showToast('Сообщение удалено');
   } catch (e) {
     console.error(e);
-    showToast(e.message === 'Можно удалять только свои сообщения'
-      ? e.message
-      : 'Не удалось удалить сообщение', 'error');
+    showToast('Не удалось удалить сообщение', 'error');
   }
 }
 
