@@ -118,11 +118,28 @@
   .task-card.cat-translate { border-left-color: #06B6D4; }
   .task-card.cat-creative { border-left-color: #F97316; }
   .task-card.cat-tech { border-left-color: #8B5CF6; }
+  .task-card.closed { opacity: .85; }
+  .task-card.closed::before {
+    content: '✅ ВЫПОЛНЕНО';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 10px;
+    background: var(--grad-green);
+    color: white;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    z-index: 1;
+  }
+  .task-card.closed .task-badge-new { display: none; }
 
   .task-badge-new { position: absolute; top: 12px; right: 12px; padding: 4px 10px; background: var(--grad-warm); color: white; border-radius: 10px; font-size: 10px; font-weight: 800; letter-spacing: .3px; box-shadow: 0 4px 12px rgba(245,158,11,.35); animation: badgePulse 2s ease-in-out infinite; }
   @keyframes badgePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
   .task-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; padding-right: 70px; }
+  .task-card.closed .task-categories { padding-left: 110px; }
   .task-category { padding: 5px 12px; background: #F0EDFF; color: var(--violet); border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: .2px; }
   .task-category.cat-design { background: #FCE7F3; color: #BE185D; }
   .task-category.cat-social { background: #DBEAFE; color: #1E40AF; }
@@ -946,7 +963,32 @@ async function loadUserStats() {
 async function loadTasks() {
   try {
     const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
-    tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    tasks = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const responses = (data.responses || []).map(r => ({
+        id: r.id || '',
+        taskId: doc.id,
+        executor: r.executor || '',
+        executorId: r.executorId || '',
+        status: r.status || 'pending',
+        createdAt: r.createdAt || ''
+      }));
+      return {
+        id: doc.id,
+        title: data.title || '',
+        categories: data.categories || [],
+        priceValue: data.price || 0,
+        description: data.description || '',
+        deadline: data.deadline || 'Не указан',
+        author: data.author || 'Неизвестный',
+        authorId: data.authorId || '',
+        rating: (data.rating || 0),
+        responses: responses,
+        status: data.status || 'open',
+        acceptedExecutorId: data.acceptedExecutorId || null,
+        createdAt: data.createdAt
+      };
+    });
     renderTasks();
     updateProfileStats();
   } catch (error) {
@@ -1011,7 +1053,7 @@ function updateProfileStats() {
 
 function getFilteredTasks() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
-  let filtered = tasks;
+  let filtered = tasks.filter(t => (t.status || 'open') !== 'closed');
   if (search) filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(search));
   if (filterCategories.length) {
     filtered = filtered.filter(t =>
@@ -1058,9 +1100,10 @@ function renderTasks() {
     const isMyTask = currentUser && task.authorId === currentUser.uid;
     const myResponse = (task.responses || []).find(r => r.executorId === (currentUser && currentUser.uid));
     const hasResponses = (task.responses || []).length > 0;
-    const newBadge = isNewTask(task) ? '<div class="task-badge-new">🔥 Новое</div>' : '';
+    const isClosed = task.status === 'closed';
+    const newBadge = (!isClosed && isNewTask(task)) ? '<div class="task-badge-new">🔥 Новое</div>' : '';
     const firstCat = (task.categories || [])[0] || '';
-    const cardClass = getCategoryClass(firstCat);
+    const cardClass = getCategoryClass(firstCat) + (isClosed ? ' closed' : '');
 
     let buttons = '';
     if (isMyTask) {
@@ -1073,7 +1116,7 @@ function renderTasks() {
       `;
     } else {
       buttons = `
-        <button class="btn-apply ${myResponse ? 'success' : ''}" ${myResponse ? 'disabled' : ''} onclick="applyForTask('${escapeJs(task.id)}', this)">${myResponse ? '✓ Отклик отправлен' : '🚀 Откликнуться'}</button>
+        <button class="btn-apply ${myResponse ? 'success' : ''}" ${myResponse || isClosed ? 'disabled' : ''} onclick="applyForTask('${escapeJs(task.id)}', this)">${myResponse ? '✓ Отклик отправлен' : isClosed ? '✅ Задание выполнено' : '🚀 Откликнуться'}</button>
         <button class="btn-chat" onclick="openChatWith('${escapeJs(task.authorId)}','${escapeJs(task.author)}')" title="Написать">💬</button>
       `;
     }
@@ -1084,7 +1127,7 @@ function renderTasks() {
         <div class="task-categories">${(task.categories || []).map(c => `<span class="task-category ${getCategoryClass(c)}">${escapeHtml(c)}</span>`).join('')}</div>
         <div class="task-title-row">
           <span class="task-title">${escapeHtml(task.title)}</span>
-          <span class="task-price">${escapeHtml(task.price)} ₽</span>
+          <span class="task-price">${escapeHtml(task.priceValue)} ₽</span>
         </div>
         <div class="task-desc">${escapeHtml(task.description || '')}</div>
         <div class="task-meta">
@@ -1145,6 +1188,10 @@ async function applyForTask(taskId, btn) {
   if (!task || !currentUser) return;
   if (task.authorId === currentUser.uid) {
     showToast('Нельзя откликаться на своё задание', 'warning');
+    return;
+  }
+  if (task.status === 'closed') {
+    showToast('Задание уже выполнено', 'warning');
     return;
   }
   if ((task.responses || []).some(r => r.executorId === currentUser.uid)) {
@@ -1219,7 +1266,7 @@ function openResponsesModal(taskId) {
           </div>
         </div>
         <button class="btn-chat" onclick="openChatWith('${escapeJs(r.executorId)}','${escapeJs(r.executor)}')" title="Написать">💬</button>
-        ${r.status === 'pending' ? `
+        ${r.status === 'pending' && task.status !== 'closed' ? `
           <button class="btn-chat" style="color: var(--green); background: #D1FAE5;" onclick="setResponseStatus('${escapeJs(task.id)}','${escapeJs(r.executorId)}','accepted')" title="Принять">✓</button>
           <button class="btn-chat" style="color: var(--red); background: #FEE2E2;" onclick="setResponseStatus('${escapeJs(task.id)}','${escapeJs(r.executorId)}','rejected')" title="Отклонить">✕</button>
         ` : ''}
@@ -1244,11 +1291,19 @@ async function setResponseStatus(taskId, executorId, status) {
       if (data.authorId !== currentUser.uid) {
         throw new Error('Только автор задания может менять статус отклика');
       }
+      if (data.status === 'closed' && status !== 'accepted') {
+        throw new Error('Задание уже закрыто');
+      }
       const responses = Array.isArray(data.responses) ? data.responses : [];
       const updated = responses.map(r =>
         r.executorId === executorId ? { ...r, status } : r
       );
-      tx.update(taskRef, { responses: updated });
+      const patch = { responses: updated };
+      if (status === 'accepted') {
+        patch.status = 'closed';
+        patch.acceptedExecutorId = executorId;
+      }
+      tx.update(taskRef, patch);
     });
 
     const task = tasks.find(t => t.id === taskId);
@@ -1256,16 +1311,20 @@ async function setResponseStatus(taskId, executorId, status) {
       task.responses = (task.responses || []).map(r =>
         r.executorId === executorId ? { ...r, status } : r
       );
+      if (status === 'accepted') {
+        task.status = 'closed';
+        task.acceptedExecutorId = executorId;
+      }
     }
     renderTasks();
     openResponsesModal(taskId);
     updateProfileStats();
-    showToast(status === 'accepted' ? 'Исполнитель принят' : 'Отклик отклонён');
+    showToast(status === 'accepted'
+      ? '✅ Исполнитель принят. Задание закрыто и скрыто с главной.'
+      : 'Отклик отклонён');
   } catch (e) {
     console.error(e);
-    showToast(e.message === 'Только автор задания может менять статус отклика'
-      ? e.message
-      : 'Ошибка обновления', 'error');
+    showToast(e.message || 'Ошибка обновления', 'error');
   }
 }
 
@@ -1565,11 +1624,13 @@ function renderMyResponses() {
     return;
   }
 
-  container.innerHTML = mine.map(({ task, response }) => `
-    <div class="task-card ${getCategoryClass((task.categories || [])[0] || '')}">
+  container.innerHTML = mine.map(({ task, response }) => {
+    const isClosed = task.status === 'closed';
+    return `
+    <div class="task-card ${getCategoryClass((task.categories || [])[0] || '')}${isClosed ? ' closed' : ''}">
       <div class="task-title-row">
         <span class="task-title">${escapeHtml(task.title)}</span>
-        <span class="task-price">${escapeHtml(task.price)} ₽</span>
+        <span class="task-price">${escapeHtml(task.priceValue)} ₽</span>
       </div>
       <div class="task-meta">
         <span>👤 ${escapeHtml(task.author)}</span>
@@ -1578,8 +1639,8 @@ function renderMyResponses() {
       <div class="task-actions">
         <button class="btn-apply" onclick="openChatWith('${escapeJs(task.authorId)}','${escapeJs(task.author)}')">💬 Написать автору</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function switchTab(tab) {
@@ -1724,6 +1785,7 @@ async function addTask() {
     authorId: currentUser ? currentUser.uid : 'unknown',
     rating: 5.0,
     responses: [],
+    status: 'open',
     createdAt: new Date().toISOString()
   };
 
@@ -1732,7 +1794,21 @@ async function addTask() {
       ...newTask,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    tasks.unshift({ id: docRef.id, ...newTask });
+    tasks.unshift({
+      id: docRef.id,
+      title: newTask.title,
+      categories: newTask.categories,
+      priceValue: newTask.price,
+      description: newTask.description,
+      deadline: newTask.deadline,
+      author: newTask.author,
+      authorId: newTask.authorId,
+      rating: newTask.rating,
+      responses: [],
+      status: 'open',
+      acceptedExecutorId: null,
+      createdAt: newTask.createdAt
+    });
     userStats.tasksCreated++;
     renderTasks();
     updateProfileStats();
