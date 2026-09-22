@@ -1053,7 +1053,10 @@ function updateProfileStats() {
 
 function getFilteredTasks() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
-  let filtered = tasks.filter(t => (t.status || 'open') !== 'closed');
+  let filtered = tasks.filter(t => {
+    if ((t.status || 'open') !== 'closed') return true;
+    return currentUser && t.authorId === currentUser.uid;
+  });
   if (search) filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(search));
   if (filterCategories.length) {
     filtered = filtered.filter(t =>
@@ -1280,8 +1283,38 @@ function closeResponsesModal() {
   document.getElementById('responsesModal').classList.remove('show');
 }
 
+async function ensureChatExists(otherUid, otherName) {
+  if (!currentUser) return;
+  if (!otherUid || otherUid === 'unknown') return;
+  if (otherUid === currentUser.uid) return;
+
+  const chatId = buildChatId(currentUser.uid, otherUid);
+  const chatRef = db.collection('chats').doc(chatId);
+  const snap = await chatRef.get();
+
+  if (!snap.exists) {
+    await chatRef.set({
+      participants: [currentUser.uid, otherUid],
+      participantNames: {
+        [currentUser.uid]: userName,
+        [otherUid]: otherName
+      },
+      lastMessage: 'Нет сообщений',
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    userStats.chatsOpened++;
+    updateProfileStats();
+  }
+}
+
 async function setResponseStatus(taskId, executorId, status) {
   if (!currentUser) return;
+
+  const currentTask = tasks.find(t => t.id === taskId);
+  const acceptedResp = (currentTask?.responses || []).find(r => r.executorId === executorId);
+  const executorName = acceptedResp ? acceptedResp.executor : 'Пользователь';
+
   const taskRef = db.collection('tasks').doc(taskId);
   try {
     await db.runTransaction(async (tx) => {
@@ -1291,7 +1324,7 @@ async function setResponseStatus(taskId, executorId, status) {
       if (data.authorId !== currentUser.uid) {
         throw new Error('Только автор задания может менять статус отклика');
       }
-      if (data.status === 'closed' && status !== 'accepted') {
+      if (data.status === 'closed') {
         throw new Error('Задание уже закрыто');
       }
       const responses = Array.isArray(data.responses) ? data.responses : [];
@@ -1302,6 +1335,8 @@ async function setResponseStatus(taskId, executorId, status) {
       if (status === 'accepted') {
         patch.status = 'closed';
         patch.acceptedExecutorId = executorId;
+      } else if (!data.status) {
+        patch.status = 'open';
       }
       tx.update(taskRef, patch);
     });
@@ -1316,11 +1351,20 @@ async function setResponseStatus(taskId, executorId, status) {
         task.acceptedExecutorId = executorId;
       }
     }
+
+    if (status === 'accepted') {
+      try {
+        await ensureChatExists(executorId, executorName);
+      } catch (e) {
+        console.warn('Не удалось создать чат с исполнителем:', e);
+      }
+    }
+
     renderTasks();
     openResponsesModal(taskId);
     updateProfileStats();
     showToast(status === 'accepted'
-      ? '✅ Исполнитель принят. Задание закрыто и скрыто с главной.'
+      ? '✅ Исполнитель принят. Задание закрыто, чат создан.'
       : 'Отклик отклонён');
   } catch (e) {
     console.error(e);
