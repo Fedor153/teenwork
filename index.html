@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -12,6 +13,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
 
 <style>
   :root {
@@ -485,6 +487,47 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+const SENTRY_DSN = '';
+const REPORT_ERRORS = true;
+
+if (SENTRY_DSN && typeof Sentry !== 'undefined') {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: 0.1,
+    environment: location.hostname === 'localhost' ? 'dev' : 'prod'
+  });
+}
+
+function reportError(context, error) {
+  const msg = (error && error.message) ? error.message : String(error);
+  console.error('[TeenWork] ' + context + ':', error);
+
+  if (SENTRY_DSN && typeof Sentry !== 'undefined') {
+    try {
+      Sentry.captureException(error, { tags: { context: context } });
+    } catch (_) {}
+  }
+
+  if (REPORT_ERRORS && typeof showToast === 'function') {
+    try {
+      showToast(context + ': ' + msg.slice(0, 120), 'error');
+    } catch (_) {}
+  }
+}
+
+window.addEventListener('error', function (event) {
+  reportError('JS error', event.error || event.message);
+});
+
+window.addEventListener('unhandledrejection', function (event) {
+  const reason = event.reason;
+  if (reason && reason.code === 'permission-denied') {
+    reportError('Firestore: доступ запрещён', reason);
+  } else {
+    reportError('Promise rejection', reason);
+  }
+});
+
 const SUPPORT_UID = 'teenwork-support-bot';
 const SUPPORT_NAME = 'TeenWork Support';
 
@@ -693,6 +736,7 @@ function escapeJs(s) {
 
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
+  if (!t) return;
   const txt = document.getElementById('toastText');
   const icon = t.querySelector('.toast-icon');
   t.className = 'toast show' + (type === 'error' ? ' error' : type === 'warning' ? ' warning' : '');
@@ -901,6 +945,12 @@ auth.onAuthStateChanged(user => {
     document.getElementById('profileEmail').textContent = user.email || '';
     authContainer.classList.remove('active');
 
+    if (SENTRY_DSN && typeof Sentry !== 'undefined') {
+      try {
+        Sentry.setUser({ id: user.uid, email: user.email });
+      } catch (_) {}
+    }
+
     loadUserStats();
 
     db.collection('users').doc(user.uid).get().then(doc => {
@@ -933,6 +983,9 @@ auth.onAuthStateChanged(user => {
       chatsOpened: 0,
       nightOwlEarned: false
     };
+    if (SENTRY_DSN && typeof Sentry !== 'undefined') {
+      try { Sentry.setUser(null); } catch (_) {}
+    }
     renderTasks();
     renderChats();
   }
@@ -956,7 +1009,7 @@ async function loadUserStats() {
       updateProfileStats();
     }
   } catch (e) {
-    console.warn('loadUserStats error', e);
+    reportError('loadUserStats', e);
   }
 }
 
@@ -992,7 +1045,7 @@ async function loadTasks() {
     renderTasks();
     updateProfileStats();
   } catch (error) {
-    console.warn('⚠️ Ошибка загрузки:', error);
+    reportError('Загрузка заданий', error);
     tasks = [];
     renderTasks();
   }
@@ -1180,8 +1233,10 @@ async function confirmDeleteTask() {
     updateProfileStats();
     showToast('Задание удалено');
   } catch (e) {
-    console.error(e);
-    showToast(e.message === 'Нет прав на удаление' ? 'Можно удалять только свои задания' : 'Не удалось удалить', 'error');
+    reportError('Удаление задания', e);
+    showToast(e.message === 'Нет прав на удаление'
+      ? 'Можно удалять только свои задания'
+      : 'Не удалось удалить', 'error');
   }
 }
 
@@ -1239,7 +1294,7 @@ async function applyForTask(taskId, btn) {
     updateProfileStats();
     setTimeout(() => renderTasks(), 1000);
   } catch (error) {
-    console.error(error);
+    reportError('Отклик на задание', error);
     restoreBtn();
     showToast('Ошибка отправки', 'error');
   } finally {
@@ -1356,7 +1411,7 @@ async function setResponseStatus(taskId, executorId, status) {
       try {
         await ensureChatExists(executorId, executorName);
       } catch (e) {
-        console.warn('Не удалось создать чат с исполнителем:', e);
+        reportError('Создание чата после принятия', e);
       }
     }
 
@@ -1367,7 +1422,7 @@ async function setResponseStatus(taskId, executorId, status) {
       ? '✅ Исполнитель принят. Задание закрыто, чат создан.'
       : 'Отклик отклонён');
   } catch (e) {
-    console.error(e);
+    reportError('Смена статуса отклика', e);
     showToast(e.message || 'Ошибка обновления', 'error');
   }
 }
@@ -1388,7 +1443,7 @@ function startChatsListener() {
       renderChats();
       updateProfileStats();
     }, err => {
-      console.warn('⚠️ Ошибка слушателя чатов:', err);
+      reportError('Слушатель чатов', err);
     });
 }
 
@@ -1468,7 +1523,7 @@ async function openChatWith(otherUid, otherName) {
 
     openChatById(chatId);
   } catch (e) {
-    console.error(e);
+    reportError('Открытие чата', e);
     showToast('Ошибка открытия чата', 'error');
   }
 }
@@ -1530,7 +1585,7 @@ function openChatById(chatId) {
       }));
       renderMessages();
     }, err => {
-      console.warn('messages listener error', err);
+      reportError('Слушатель сообщений', err);
     });
 
   currentChatUnsub = () => {
@@ -1598,11 +1653,11 @@ async function sendChatMessage() {
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
             lastMessage: reply.text.slice(0, 120)
           });
-        } catch (e) { console.warn(e); }
+        } catch (e) { reportError('Ответ поддержки', e); }
       }, 1200);
     }
   } catch (e) {
-    console.error(e);
+    reportError('Отправка сообщения', e);
     showToast('Не удалось отправить', 'error');
   }
 }
@@ -1642,7 +1697,7 @@ async function deleteChatMessage(msgId) {
 
     showToast('Сообщение удалено');
   } catch (e) {
-    console.error(e);
+    reportError('Удаление сообщения', e);
     showToast('Не удалось удалить сообщение', 'error');
   }
 }
@@ -1873,8 +1928,8 @@ async function addTask() {
       showToast('Задание опубликовано!');
     }
   } catch (error) {
+    reportError('Создание задания', error);
     showToast('Ошибка сохранения', 'error');
-    console.error(error);
   } finally {
     release();
   }
