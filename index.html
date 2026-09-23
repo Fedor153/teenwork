@@ -1,9 +1,11 @@
-html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#7C3AED">
+<meta name="description" content="TeenWork — работа для подростков. Находи простые задания, зарабатывай и прокачивай уровень.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧑‍💻</text></svg>">
 <title>TeenWork — Работа для подростков</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +43,7 @@ html
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  body { background: var(--bg); min-height: 100vh; padding: 16px; padding-bottom: calc(90px + env(safe-area-inset-bottom)); color: var(--text); -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); min-height: 100vh; padding: 16px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); color: var(--text); -webkit-tap-highlight-color: transparent; }
 
   .splash { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 50%, #4C1D95 100%); z-index: 9999; transition: opacity .8s ease; overflow: hidden; }
   .splash::before, .splash::after { content: ''; position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; animation: floatBlob 8s ease-in-out infinite; }
@@ -279,7 +281,7 @@ html
   .check-circle { width: 120px; height: 120px; border-radius: 50%; background: var(--grad-green); display: flex; align-items: center; justify-content: center; font-size: 60px; color: white; box-shadow: 0 12px 40px rgba(16,185,129,.5); animation: checkPop .5s cubic-bezier(.34,1.56,.64,1); }
   @keyframes checkPop { 0% { transform: scale(0) rotate(-90deg); } 100% { transform: scale(1) rotate(0); } }
 
-  @media (max-width: 480px) { body { padding: 12px; } .splash .app-name { font-size: 34px; } }
+  @media (max-width: 480px) { body { padding: 12px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); } .splash .app-name { font-size: 34px; } }
   @media (min-width: 768px) { body { max-width: 640px; margin: 0 auto; } }
   @media (min-width: 1024px) {
     body { max-width: 960px; }
@@ -287,6 +289,7 @@ html
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 14px;
+      padding-bottom: 40px;
     }
     #tasksContainer .task-card { margin-bottom: 0; }
   }
