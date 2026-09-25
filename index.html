@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -15,7 +16,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
 
 <style>
   :root {
@@ -69,8 +69,12 @@
   .auth-card::before { content: ''; position: absolute; top: -60px; right: -60px; width: 180px; height: 180px; background: var(--grad-main); border-radius: 50%; opacity: .08; }
   .auth-card h2 { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 8px; text-align: center; letter-spacing: -.5px; }
   .auth-card .subtitle { font-size: 14px; color: var(--text2); text-align: center; margin-bottom: 24px; }
-  .auth-card input { width: 100%; padding: 14px 16px; border: 2px solid var(--divider); border-radius: 14px; font-size: 15px; margin-bottom: 12px; outline: none; background: #FAFAFF; font-family: inherit; transition: all .2s; }
-  .auth-card input:focus { border-color: var(--violet); background: white; box-shadow: 0 0 0 4px rgba(124,58,237,.1); }
+  .auth-card input[type="text"],
+  .auth-card input[type="email"],
+  .auth-card input[type="password"] { width: 100%; padding: 14px 16px; border: 2px solid var(--divider); border-radius: 14px; font-size: 15px; margin-bottom: 12px; outline: none; background: #FAFAFF; font-family: inherit; transition: all .2s; }
+  .auth-card input[type="text"]:focus,
+  .auth-card input[type="email"]:focus,
+  .auth-card input[type="password"]:focus { border-color: var(--violet); background: white; box-shadow: 0 0 0 4px rgba(124,58,237,.1); }
   .auth-card .btn-primary { width: 100%; padding: 15px; background: var(--grad-main); color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: inherit; box-shadow: var(--shadow-md); transition: transform .15s, box-shadow .15s; letter-spacing: .3px; }
   .auth-card .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
   .auth-card .btn-primary:active { transform: scale(.98); }
@@ -83,6 +87,12 @@
   .auth-card .error.show { display: block; }
   .auth-card .info { color: var(--green); font-size: 13px; text-align: center; margin-bottom: 12px; display: none; padding: 10px; background: #ECFDF5; border-radius: 10px; }
   .auth-card .info.show { display: block; }
+
+  .terms-checkbox { display: none; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 12px; line-height: 1.4; }
+  .terms-checkbox.show { display: flex; }
+  .terms-checkbox input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; margin-top: 2px; accent-color: var(--violet); cursor: pointer; }
+  .terms-checkbox a { color: var(--violet); font-weight: 600; text-decoration: none; }
+  .terms-checkbox a:hover { text-decoration: underline; }
 
   .terms-container { display: none; max-width: 520px; margin: 0 auto; padding: 20px; min-height: 80vh; }
   .terms-container.active { display: flex; align-items: center; justify-content: center; }
@@ -226,7 +236,7 @@
   .badge .badge-name { font-size: 9px; font-weight: 700; color: var(--text2); line-height: 1.2; }
 
   .profile-actions { display: flex; flex-direction: column; gap: 10px; }
-  .profile-btn { padding: 15px; background: var(--surface); color: var(--text); border: 2px solid var(--divider); border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; }
+  .profile-btn { padding: 15px; background: var(--surface); color: var(--text); border: 2px solid var(--divider); border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; text-decoration: none; }
   .profile-btn:hover { border-color: var(--violet); background: #FAFAFF; }
   .profile-btn.primary { background: var(--grad-main); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(124,58,237,.3); }
   .profile-btn.danger { background: var(--grad-red); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(220,38,38,.3); }
@@ -310,9 +320,13 @@
     <div class="subtitle" id="authSubtitle">Войдите в свой аккаунт</div>
     <div class="error" id="authError"></div>
     <div class="info" id="authInfo"></div>
-    <input id="authName" placeholder="Как тебя зовут?" style="display:none;">
-    <input id="authEmail" placeholder="Email" type="email">
-    <input id="authPassword" placeholder="Пароль" type="password">
+    <input id="authName" type="text" placeholder="Как тебя зовут?" style="display:none;">
+    <input id="authEmail" type="email" placeholder="Email">
+    <input id="authPassword" type="password" placeholder="Пароль">
+    <label class="terms-checkbox" id="termsCheckbox">
+      <input type="checkbox" id="termsAgree">
+      <span>Я принимаю <a href="privacy.html" target="_blank" rel="noopener">политику конфиденциальности</a> и правила сервиса</span>
+    </label>
     <div class="forgot-link" id="forgotRow">
       <span onclick="resetPassword()">Забыли пароль?</span>
     </div>
@@ -385,6 +399,7 @@
     <div class="profile-actions">
       <button class="profile-btn primary" onclick="switchNav('myResponses')">📋 Мои отклики</button>
       <button class="profile-btn" onclick="openSupportChat()">💬 Поддержка</button>
+      <a class="profile-btn" href="privacy.html" target="_blank" rel="noopener">📄 Политика конфиденциальности</a>
       <button class="profile-btn danger" onclick="logout()">🚪 Выйти из аккаунта</button>
     </div>
   </div>
@@ -490,28 +505,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-const SENTRY_DSN = '';
-const REPORT_ERRORS = true;
-
-if (SENTRY_DSN && typeof Sentry !== 'undefined') {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    tracesSampleRate: 0.1,
-    environment: location.hostname === 'localhost' ? 'dev' : 'prod'
-  });
-}
-
 function reportError(context, error) {
   const msg = (error && error.message) ? error.message : String(error);
   console.error('[TeenWork] ' + context + ':', error);
-
-  if (SENTRY_DSN && typeof Sentry !== 'undefined') {
-    try {
-      Sentry.captureException(error, { tags: { context: context } });
-    } catch (_) {}
-  }
-
-  if (REPORT_ERRORS && typeof showToast === 'function') {
+  if (typeof showToast === 'function') {
     try {
       showToast(context + ': ' + msg.slice(0, 120), 'error');
     } catch (_) {}
@@ -798,6 +795,7 @@ function toggleAuth() {
     'Нет аккаунта? <span onclick="toggleAuth()">Зарегистрироваться</span>' :
     'Уже есть аккаунт? <span onclick="toggleAuth()">Войти</span>';
   document.getElementById('forgotRow').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('termsCheckbox').classList.toggle('show', !isLogin);
   document.getElementById('authError').classList.remove('show');
   document.getElementById('authInfo').classList.remove('show');
 }
@@ -820,6 +818,11 @@ async function handleAuth() {
   }
   if (!isLogin && !name) {
     errorEl.textContent = 'Введи имя';
+    errorEl.classList.add('show');
+    return;
+  }
+  if (!isLogin && !document.getElementById('termsAgree').checked) {
+    errorEl.textContent = 'Подтверди согласие с политикой конфиденциальности';
     errorEl.classList.add('show');
     return;
   }
@@ -847,6 +850,7 @@ async function handleAuth() {
         rating: 0,
         completedTasks: 0,
         nightOwlEarned: false,
+        termsAccepted: true,
         createdAt: new Date().toISOString()
       });
     }
@@ -919,10 +923,7 @@ function acceptTerms() {
     db.collection('users').doc(currentUser.uid).set({
       name: userName,
       email: currentUser.email,
-      rating: 0,
-      completedTasks: 0,
-      termsAccepted: true,
-      createdAt: new Date().toISOString()
+      termsAccepted: true
     }, { merge: true });
   }
   document.getElementById('termsContainer').classList.remove('active');
@@ -947,12 +948,6 @@ auth.onAuthStateChanged(user => {
     document.getElementById('profileAvatar').textContent = (userName[0] || '?').toUpperCase();
     document.getElementById('profileEmail').textContent = user.email || '';
     authContainer.classList.remove('active');
-
-    if (SENTRY_DSN && typeof Sentry !== 'undefined') {
-      try {
-        Sentry.setUser({ id: user.uid, email: user.email });
-      } catch (_) {}
-    }
 
     loadUserStats();
 
@@ -986,9 +981,6 @@ auth.onAuthStateChanged(user => {
       chatsOpened: 0,
       nightOwlEarned: false
     };
-    if (SENTRY_DSN && typeof Sentry !== 'undefined') {
-      try { Sentry.setUser(null); } catch (_) {}
-    }
     renderTasks();
     renderChats();
   }
@@ -1453,6 +1445,10 @@ function startChatsListener() {
 function renderChats() {
   const container = document.getElementById('chatsContainer');
   if (!container) return;
+  if (!currentUser) {
+    container.innerHTML = '';
+    return;
+  }
   if (!chats.length) {
     container.innerHTML = `<div class="empty-state">
       <div class="emoji">💬</div>
