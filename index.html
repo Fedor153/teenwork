@@ -89,6 +89,10 @@
   .auth-card .info { color: var(--green); font-size: 13px; text-align: center; margin-bottom: 12px; display: none; padding: 10px; background: #ECFDF5; border-radius: 10px; }
   .auth-card .info.show { display: block; }
 
+  .tg-hint { display: none; margin-bottom: 12px; padding: 12px; background: #EFF6FF; border-radius: 12px; font-size: 13px; color: #1E40AF; line-height: 1.4; }
+  .tg-hint.show { display: block; }
+  .tg-hint b { color: #1E3A8A; }
+
   .terms-checkbox { display: none; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 12px; line-height: 1.4; }
   .terms-checkbox.show { display: flex; }
   .terms-checkbox input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; margin-top: 2px; accent-color: var(--violet); cursor: pointer; }
@@ -170,6 +174,7 @@
   .task-desc { font-size: 14px; color: var(--text2); margin-bottom: 10px; word-break: break-word; line-height: 1.4; }
   .task-meta { display: flex; gap: 14px; font-size: 12px; color: var(--text2); margin-bottom: 12px; flex-wrap: wrap; font-weight: 500; }
   .task-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .task-meta .mini-avatar { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
   .task-actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-apply { flex: 1; min-width: 130px; padding: 12px; background: var(--grad-main); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(124,58,237,.3); transition: transform .15s; letter-spacing: .2px; }
   .btn-apply:active { transform: scale(.97); }
@@ -215,7 +220,8 @@
 
   .profile-card { background: var(--surface); border-radius: 22px; padding: 24px; text-align: center; margin-bottom: 16px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
   .profile-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100px; background: var(--grad-main); }
-  .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--grad-accent); display: flex; align-items: center; justify-content: center; font-size: 38px; color: white; margin: 0 auto 12px; position: relative; z-index: 1; box-shadow: 0 8px 24px rgba(124,58,237,.4), 0 0 0 4px white; font-weight: 800; }
+  .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--grad-accent); display: flex; align-items: center; justify-content: center; font-size: 38px; color: white; margin: 0 auto 12px; position: relative; z-index: 1; box-shadow: 0 8px 24px rgba(124,58,237,.4), 0 0 0 4px white; font-weight: 800; overflow: hidden; }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .profile-name { font-size: 22px; font-weight: 800; position: relative; z-index: 1; margin-top: 60px; word-break: break-word; letter-spacing: -.3px; }
   .profile-email { font-size: 13px; color: var(--text2); position: relative; z-index: 1; margin-top: 4px; }
 
@@ -245,7 +251,8 @@
 
   .chat-list-item { background: var(--surface); border-radius: 18px; padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
   .chat-list-item:active { transform: scale(.99); box-shadow: var(--shadow-md); }
-  .chat-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--grad-accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(124,58,237,.25); }
+  .chat-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--grad-accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(124,58,237,.25); overflow: hidden; }
+  .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .chat-avatar.support { background: var(--grad-green); }
   .chat-list-body { flex: 1; min-width: 0; }
   .chat-list-name { font-weight: 700; font-size: 15px; color: var(--text); word-break: break-word; }
@@ -356,9 +363,10 @@
     <div class="subtitle" id="authSubtitle">Войдите в свой аккаунт</div>
     <div class="error" id="authError"></div>
     <div class="info" id="authInfo"></div>
-    <input id="authName" type="text" placeholder="Как тебя зовут?" style="display:none;">
-    <input id="authEmail" type="email" placeholder="Email">
-    <input id="authPassword" type="password" placeholder="Пароль">
+    <div class="tg-hint" id="tgHint"></div>
+    <input id="authName" type="text" placeholder="Как тебя зовут?" maxlength="50" style="display:none;">
+    <input id="authEmail" type="email" placeholder="Email" maxlength="200">
+    <input id="authPassword" type="password" placeholder="Пароль" maxlength="100">
     <label class="terms-checkbox" id="termsCheckbox">
       <input type="checkbox" id="termsAgree">
       <span>Я принимаю <a href="privacy.html" target="_blank" rel="noopener">политику конфиденциальности</a> и правила сервиса</span>
@@ -393,7 +401,7 @@
 
   <div id="homeSection">
     <div class="search-bar">
-      <input id="searchInput" placeholder="🔍 Поиск по заданиям..." oninput="filterTasks()">
+      <input id="searchInput" placeholder="🔍 Поиск по заданиям..." oninput="filterTasks()" maxlength="100">
       <button class="filter-btn" onclick="openFilterModal()">⚙️</button>
     </div>
     <div class="tabs" id="tabsContainer">
@@ -434,6 +442,7 @@
 
     <div class="profile-actions">
       <button class="profile-btn primary" onclick="switchNav('myResponses')">📋 Мои отклики</button>
+      <button class="profile-btn" onclick="syncTelegramAvatar()">🔄 Обновить аватар из Telegram</button>
       <button class="profile-btn" onclick="openSupportChat()">💬 Поддержка</button>
       <a class="profile-btn" href="privacy.html" target="_blank" rel="noopener">📄 Политика конфиденциальности</a>
       <button class="profile-btn danger" onclick="logout()">🚪 Выйти из аккаунта</button>
@@ -458,10 +467,10 @@
 <div class="modal-overlay" id="addModal">
   <div class="modal">
     <div class="modal-title">➕ Новое задание</div>
-    <input id="taskTitle" placeholder="Название задания *">
-    <input id="taskPrice" placeholder="Цена *" type="number">
-    <textarea id="taskDesc" placeholder="Описание"></textarea>
-    <input id="taskDeadline" placeholder="Срок выполнения">
+    <input id="taskTitle" placeholder="Название задания *" maxlength="100">
+    <input id="taskPrice" placeholder="Цена *" type="number" maxlength="10">
+    <textarea id="taskDesc" placeholder="Описание" maxlength="2000"></textarea>
+    <input id="taskDeadline" placeholder="Срок выполнения" maxlength="100">
     <div style="font-size:13px; font-weight:700; margin-bottom:8px; color: var(--text);">Категории:</div>
     <div class="modal-categories" id="modalCategories"></div>
     <div class="modal-actions">
@@ -515,7 +524,7 @@
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-row">
-      <input id="chatInput" placeholder="Напиши сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage();">
+      <input id="chatInput" placeholder="Напиши сообщение..." maxlength="2000" onkeydown="if(event.key==='Enter') sendChatMessage();">
       <button onclick="sendChatMessage()">➤</button>
     </div>
   </div>
@@ -537,6 +546,7 @@ const firebaseConfig = {
   appId: "1:975374727761:web:f312ddce7f674fc59f5670"
 };
 
+let tgUser = null;
 try {
   if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
@@ -547,6 +557,9 @@ try {
     if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
     if (typeof tg.requestFullscreen === 'function') {
       try { tg.requestFullscreen(); } catch (_) {}
+    }
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      tgUser = tg.initDataUnsafe.user;
     }
   }
 } catch (e) { console.warn('Telegram WebApp init failed', e); }
@@ -816,6 +829,18 @@ function showCheckAnim() {
   setTimeout(() => el.classList.remove('show'), 900);
 }
 
+function getTgPhotoUrl() {
+  if (tgUser && tgUser.photo_url) return tgUser.photo_url;
+  return '';
+}
+
+function avatarMiniHtml(photoURL, fallbackName) {
+  if (photoURL) {
+    return '<img class="mini-avatar" src="' + escapeHtml(photoURL) + '" alt="" onerror="this.style.display=\'none\'">';
+  }
+  return '';
+}
+
 let tasks = [];
 let chats = [];
 let currentTab = 'all';
@@ -823,6 +848,7 @@ let currentNav = 'home';
 let filterCategories = [];
 let currentUser = null;
 let userName = '';
+let userPhotoURL = '';
 let currentChatId = null;
 let currentChatUnsub = null;
 let chatsUnsub = null;
@@ -862,13 +888,26 @@ function toggleAuth() {
   document.getElementById('termsCheckbox').classList.toggle('show', !isLogin);
   document.getElementById('authError').classList.remove('show');
   document.getElementById('authInfo').classList.remove('show');
+  updateTgHint();
+}
+
+function updateTgHint() {
+  const hint = document.getElementById('tgHint');
+  if (!hint) return;
+  if (!isLogin && tgUser) {
+    const tgName = (tgUser.first_name || '') + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+    hint.innerHTML = '✅ Открыто через Telegram. Аккаунт: <b>' + escapeHtml(tgName.trim()) + '</b>. Имя и аватар подтянутся автоматически.';
+    hint.classList.add('show');
+  } else {
+    hint.classList.remove('show');
+  }
 }
 
 async function handleAuth() {
   if (authLoading) return;
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value.trim();
-  const name = document.getElementById('authName').value.trim();
+  const nameInput = document.getElementById('authName').value.trim();
   const errorEl = document.getElementById('authError');
   const infoEl = document.getElementById('authInfo');
 
@@ -880,6 +919,13 @@ async function handleAuth() {
     errorEl.classList.add('show');
     return;
   }
+
+  let name = nameInput;
+  if (!isLogin && !name && tgUser) {
+    name = ((tgUser.first_name || '') + (tgUser.last_name ? ' ' + tgUser.last_name : '')).trim();
+    if (!name) name = 'Пользователь';
+  }
+
   if (!isLogin && !name) {
     errorEl.textContent = 'Введи имя';
     errorEl.classList.add('show');
@@ -908,7 +954,11 @@ async function handleAuth() {
     } else {
       const result = await auth.createUserWithEmailAndPassword(email, password);
       await result.user.updateProfile({ displayName: name });
-      await db.collection('users').doc(result.user.uid).set({
+      userName = name;
+      currentUser = result.user;
+      const photoURL = getTgPhotoUrl();
+      if (photoURL) userPhotoURL = photoURL;
+      const userDoc = {
         name: name,
         email: email,
         rating: 0,
@@ -916,7 +966,12 @@ async function handleAuth() {
         nightOwlEarned: false,
         termsAccepted: true,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      };
+      if (photoURL) userDoc.photoURL = photoURL;
+      await db.collection('users').doc(result.user.uid).set(userDoc);
+      document.getElementById('profileName').textContent = name;
+      document.getElementById('profileEmail').textContent = email;
+      renderProfileHeader();
     }
     document.getElementById('authContainer').classList.remove('active');
   } catch (err) {
@@ -961,7 +1016,7 @@ async function resetPassword() {
 
   try {
     await auth.sendPasswordResetEmail(email);
-    infoEl.textContent = `📧 Письмо для восстановления пароля отправлено на ${email}. Проверь почту (и папку «Спам»).`;
+    infoEl.textContent = '📧 Письмо для восстановления пароля отправлено на ' + email + '. Проверь почту (и папку «Спам»).';
     infoEl.classList.add('show');
   } catch (err) {
     let msg = 'Не удалось отправить письмо';
@@ -986,16 +1041,47 @@ function logout() {
 
 function acceptTerms() {
   if (currentUser) {
-    db.collection('users').doc(currentUser.uid).set({
+    const patch = {
       name: userName,
       email: currentUser.email,
       termsAccepted: true
-    }, { merge: true });
+    };
+    const photoURL = getTgPhotoUrl();
+    if (photoURL && !userPhotoURL) patch.photoURL = photoURL;
+    db.collection('users').doc(currentUser.uid).set(patch, { merge: true });
   }
   document.getElementById('termsContainer').classList.remove('active');
   document.getElementById('appContainer').classList.add('active');
   loadTasks();
   startChatsListener();
+}
+
+async function syncTelegramAvatar() {
+  if (!currentUser) return;
+  const photoURL = getTgPhotoUrl();
+  if (!photoURL) {
+    showToast('Аватар доступен только внутри Telegram', 'warning');
+    return;
+  }
+  try {
+    await db.collection('users').doc(currentUser.uid).set({ photoURL: photoURL }, { merge: true });
+    userPhotoURL = photoURL;
+    renderProfileHeader();
+    showToast('Аватар обновлён из Telegram');
+  } catch (e) {
+    reportError('Обновление аватара', e);
+    showToast('Не удалось обновить аватар', 'error');
+  }
+}
+
+function renderProfileHeader() {
+  const av = document.getElementById('profileAvatar');
+  if (!av) return;
+  if (userPhotoURL) {
+    av.innerHTML = '<img src="' + escapeHtml(userPhotoURL) + '" alt="" onerror="this.parentNode.textContent=\'' + escapeJs((userName || '?')[0].toUpperCase()) + '\'">';
+  } else {
+    av.textContent = (userName || '?')[0].toUpperCase();
+  }
 }
 
 auth.onAuthStateChanged(user => {
@@ -1011,29 +1097,51 @@ auth.onAuthStateChanged(user => {
     currentUser = user;
     userName = user.displayName || 'Пользователь';
     document.getElementById('profileName').textContent = userName;
-    document.getElementById('profileAvatar').textContent = (userName[0] || '?').toUpperCase();
     document.getElementById('profileEmail').textContent = user.email || '';
     authContainer.classList.remove('active');
 
     loadUserStats();
 
     db.collection('users').doc(user.uid).get().then(doc => {
-      if (doc.exists && doc.data().termsAccepted) {
-        termsContainer.classList.remove('active');
-        appContainer.classList.add('active');
-        loadTasks();
-        startChatsListener();
+      if (doc.exists) {
+        const data = doc.data() || {};
+        if (data.name) {
+          userName = data.name;
+          document.getElementById('profileName').textContent = userName;
+        }
+        if (data.photoURL) userPhotoURL = data.photoURL;
+        else {
+          const tgPhoto = getTgPhotoUrl();
+          if (tgPhoto) {
+            userPhotoURL = tgPhoto;
+            db.collection('users').doc(user.uid).set({ photoURL: tgPhoto }, { merge: true }).catch((e) => reportError('Авто-синк аватара', e));
+          }
+        }
+        renderProfileHeader();
+        if (data.termsAccepted) {
+          termsContainer.classList.remove('active');
+          appContainer.classList.add('active');
+          loadTasks();
+          startChatsListener();
+        } else {
+          termsContainer.classList.add('active');
+          appContainer.classList.remove('active');
+        }
       } else {
+        renderProfileHeader();
         termsContainer.classList.add('active');
         appContainer.classList.remove('active');
       }
     }).catch((err) => {
       reportError('Чтение профиля', err);
+      renderProfileHeader();
       termsContainer.classList.add('active');
       appContainer.classList.remove('active');
     });
   } else {
     currentUser = null;
+    userName = '';
+    userPhotoURL = '';
     authContainer.classList.add('active');
     appContainer.classList.remove('active');
     termsContainer.classList.remove('active');
@@ -1048,6 +1156,7 @@ auth.onAuthStateChanged(user => {
       chatsOpened: 0,
       nightOwlEarned: false
     };
+    updateTgHint();
     renderTasks();
     renderChats();
   }
@@ -1139,11 +1248,11 @@ function updateProfileStats() {
     const done = completed - level.min;
     const pct = Math.min(100, (done / total) * 100);
     document.getElementById('levelProgressFill').style.width = pct + '%';
-    document.getElementById('levelProgressText').textContent = `${completed} из ${nextLevel.min} заданий`;
-    document.getElementById('levelNextText').textContent = `До «${nextLevel.name}»: ${nextLevel.min - completed}`;
+    document.getElementById('levelProgressText').textContent = completed + ' из ' + nextLevel.min + ' заданий';
+    document.getElementById('levelNextText').textContent = 'До «' + nextLevel.name + '»: ' + (nextLevel.min - completed);
   } else {
     document.getElementById('levelProgressFill').style.width = '100%';
-    document.getElementById('levelProgressText').textContent = `${completed} заданий — максимум!`;
+    document.getElementById('levelProgressText').textContent = completed + ' заданий — максимум!';
     document.getElementById('levelNextText').textContent = 'Ты легенда 🎉';
   }
 
@@ -1159,10 +1268,10 @@ function updateProfileStats() {
 
   document.getElementById('badgesGrid').innerHTML = BADGES.map(b => {
     const isEarned = earned.has(b.id);
-    return `<div class="badge ${isEarned ? 'earned' : 'locked'}" title="${escapeHtml(b.desc)}">
-      <span class="badge-icon">${b.icon}</span>
-      <span class="badge-name">${escapeHtml(b.name)}</span>
-    </div>`;
+    return '<div class="badge ' + (isEarned ? 'earned' : 'locked') + '" title="' + escapeHtml(b.desc) + '">' +
+      '<span class="badge-icon">' + b.icon + '</span>' +
+      '<span class="badge-name">' + escapeHtml(b.name) + '</span>' +
+    '</div>';
   }).join('');
 }
 
@@ -1190,10 +1299,12 @@ function getFilteredTasks() {
 function isNewTask(task) {
   if (!task.createdAt) return false;
   let ms;
-  if (typeof task.createdAt === 'string') ms = Date.parse(task.createdAt);
+  if (task.createdAt instanceof Date) ms = task.createdAt.getTime();
+  else if (typeof task.createdAt === 'string') ms = Date.parse(task.createdAt);
   else if (task.createdAt.toMillis) ms = task.createdAt.toMillis();
   else if (task.createdAt.seconds) ms = task.createdAt.seconds * 1000;
   else return false;
+  if (!isFinite(ms)) return false;
   return (Date.now() - ms) < 3600000;
 }
 
@@ -1206,11 +1317,11 @@ function renderTasks() {
   const filtered = getFilteredTasks();
 
   if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="emoji">🔍</div>
-      <div class="title">Пока пусто</div>
-      <div class="desc">Стань первым — создай задание!</div>
-    </div>`;
+    container.innerHTML = '<div class="empty-state">' +
+      '<div class="emoji">🔍</div>' +
+      '<div class="title">Пока пусто</div>' +
+      '<div class="desc">Стань первым — создай задание!</div>' +
+    '</div>';
     return;
   }
 
@@ -1226,36 +1337,31 @@ function renderTasks() {
     let buttons = '';
     if (isMyTask) {
       const targetResp = (task.responses || []).find(r => r.status === 'accepted') || (task.responses || [])[0];
-      buttons = `
-        <button class="btn-apply" disabled>📌 Моё задание</button>
-        ${hasResponses ? `<button class="btn-chat" onclick="openResponsesModal('${escapeJs(task.id)}')" title="Отклики">📋 ${(task.responses || []).length}</button>` : ''}
-        ${targetResp ? `<button class="btn-chat" onclick="openChatWith('${escapeJs(targetResp.executorId)}','${escapeJs(targetResp.executor)}')" title="Чат с исполнителем">💬</button>` : ''}
-        <button class="btn-delete" onclick="openDeleteModal('${escapeJs(task.id)}')" title="Удалить">🗑</button>
-      `;
+      buttons = '<button class="btn-apply" disabled>📌 Моё задание</button>' +
+        (hasResponses ? '<button class="btn-chat" onclick="openResponsesModal(\'' + escapeJs(task.id) + '\')" title="Отклики">📋 ' + (task.responses || []).length + '</button>' : '') +
+        (targetResp ? '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(targetResp.executorId) + '\',\'' + escapeJs(targetResp.executor) + '\')" title="Чат с исполнителем">💬</button>' : '') +
+        '<button class="btn-delete" onclick="openDeleteModal(\'' + escapeJs(task.id) + '\')" title="Удалить">🗑</button>';
     } else {
-      buttons = `
-        <button class="btn-apply ${myResponse ? 'success' : ''}" ${myResponse || isClosed ? 'disabled' : ''} onclick="applyForTask('${escapeJs(task.id)}', this)">${myResponse ? '✓ Отклик отправлен' : isClosed ? '✅ Задание выполнено' : '🚀 Откликнуться'}</button>
-        <button class="btn-chat" onclick="openChatWith('${escapeJs(task.authorId)}','${escapeJs(task.author)}')" title="Написать">💬</button>
-      `;
+      buttons = '<button class="btn-apply ' + (myResponse ? 'success' : '') + '" ' + (myResponse || isClosed ? 'disabled' : '') + ' onclick="applyForTask(\'' + escapeJs(task.id) + '\', this)">' +
+        (myResponse ? '✓ Отклик отправлен' : isClosed ? '✅ Задание выполнено' : '🚀 Откликнуться') + '</button>' +
+        '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')" title="Написать">💬</button>';
     }
 
-    return `
-      <div class="task-card ${cardClass}">
-        ${newBadge}
-        <div class="task-categories">${(task.categories || []).map(c => `<span class="task-category ${getCategoryClass(c)}">${escapeHtml(c)}</span>`).join('')}</div>
-        <div class="task-title-row">
-          <span class="task-title">${escapeHtml(task.title)}</span>
-          <span class="task-price">${escapeHtml(task.priceValue)} ₽</span>
-        </div>
-        <div class="task-desc">${escapeHtml(task.description || '')}</div>
-        <div class="task-meta">
-          <span>👤 ${escapeHtml(task.author)}</span>
-          <span>⭐ ${escapeHtml(task.rating)}</span>
-          <span>⏱ ${escapeHtml(task.deadline)}</span>
-        </div>
-        <div class="task-actions">${buttons}</div>
-      </div>
-    `;
+    return '<div class="task-card ' + cardClass + '">' +
+      newBadge +
+      '<div class="task-categories">' + (task.categories || []).map(c => '<span class="task-category ' + getCategoryClass(c) + '">' + escapeHtml(c) + '</span>').join('') + '</div>' +
+      '<div class="task-title-row">' +
+        '<span class="task-title">' + escapeHtml(task.title) + '</span>' +
+        '<span class="task-price">' + escapeHtml(task.priceValue) + ' ₽</span>' +
+      '</div>' +
+      '<div class="task-desc">' + escapeHtml(task.description || '') + '</div>' +
+      '<div class="task-meta">' +
+        '<span>👤 ' + escapeHtml(task.author) + '</span>' +
+        '<span>⭐ ' + escapeHtml(task.rating) + '</span>' +
+        '<span>⏱ ' + escapeHtml(task.deadline) + '</span>' +
+      '</div>' +
+      '<div class="task-actions">' + buttons + '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -1371,27 +1477,27 @@ function openResponsesModal(taskId) {
     showToast('Просматривать отклики может только автор задания', 'warning');
     return;
   }
-  document.getElementById('responsesTitle').textContent = `Отклики на "${task.title}"`;
+  document.getElementById('responsesTitle').textContent = 'Отклики на "' + task.title + '"';
   const list = document.getElementById('responsesList');
   if (!(task.responses || []).length) {
-    list.innerHTML = `<div style="color: var(--text2); padding:16px 0; text-align:center;">Пока нет откликов 🕐</div>`;
+    list.innerHTML = '<div style="color: var(--text2); padding:16px 0; text-align:center;">Пока нет откликов 🕐</div>';
   } else {
-    list.innerHTML = task.responses.map(r => `
-      <div style="display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid var(--divider);">
-        <div class="chat-avatar" style="width:40px;height:40px;font-size:16px;">${escapeHtml((r.executor || '?')[0].toUpperCase())}</div>
-        <div style="flex:1; min-width:0;">
-          <div style="font-weight:700; word-break:break-word;">${escapeHtml(r.executor)}</div>
-          <div style="font-size:12px; color: var(--text2); margin-top:2px;">
-            ${r.status === 'accepted' ? '✅ Принят' : r.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает'}
-          </div>
-        </div>
-        <button class="btn-chat" onclick="openChatWith('${escapeJs(r.executorId)}','${escapeJs(r.executor)}')" title="Написать">💬</button>
-        ${r.status === 'pending' && task.status !== 'closed' ? `
-          <button class="btn-chat" style="color: var(--green); background: #D1FAE5;" onclick="setResponseStatus('${escapeJs(task.id)}','${escapeJs(r.executorId)}','accepted')" title="Принять">✓</button>
-          <button class="btn-chat" style="color: var(--red); background: #FEE2E2;" onclick="setResponseStatus('${escapeJs(task.id)}','${escapeJs(r.executorId)}','rejected')" title="Отклонить">✕</button>
-        ` : ''}
-      </div>
-    `).join('');
+    list.innerHTML = task.responses.map(r =>
+      '<div style="display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid var(--divider);">' +
+        '<div class="chat-avatar" style="width:40px;height:40px;font-size:16px;">' + escapeHtml((r.executor || '?')[0].toUpperCase()) + '</div>' +
+        '<div style="flex:1; min-width:0;">' +
+          '<div style="font-weight:700; word-break:break-word;">' + escapeHtml(r.executor) + '</div>' +
+          '<div style="font-size:12px; color: var(--text2); margin-top:2px;">' +
+            (r.status === 'accepted' ? '✅ Принят' : r.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает') +
+          '</div>' +
+        '</div>' +
+        '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(r.executorId) + '\',\'' + escapeJs(r.executor) + '\')" title="Написать">💬</button>' +
+        (r.status === 'pending' && task.status !== 'closed' ?
+          '<button class="btn-chat" style="color: var(--green); background: #D1FAE5;" onclick="setResponseStatus(\'' + escapeJs(task.id) + '\',\'' + escapeJs(r.executorId) + '\',\'accepted\')" title="Принять">✓</button>' +
+          '<button class="btn-chat" style="color: var(--red); background: #FEE2E2;" onclick="setResponseStatus(\'' + escapeJs(task.id) + '\',\'' + escapeJs(r.executorId) + '\',\'rejected\')" title="Отклонить">✕</button>'
+        : '') +
+      '</div>'
+    ).join('');
   }
   document.getElementById('responsesModal').classList.add('show');
 }
@@ -1429,7 +1535,7 @@ async function setResponseStatus(taskId, executorId, status) {
   if (!currentUser) return;
 
   const currentTask = tasks.find(t => t.id === taskId);
-  const acceptedResp = (currentTask?.responses || []).find(r => r.executorId === executorId);
+  const acceptedResp = (currentTask && currentTask.responses || []).find(r => r.executorId === executorId);
   const executorName = acceptedResp ? acceptedResp.executor : 'Пользователь';
 
   const taskRef = db.collection('tasks').doc(taskId);
@@ -1498,8 +1604,8 @@ function startChatsListener() {
     .onSnapshot(snapshot => {
       chats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       chats.sort((a, b) => {
-        const ta = a.lastUpdated?.toMillis ? a.lastUpdated.toMillis() : 0;
-        const tb = b.lastUpdated?.toMillis ? b.lastUpdated.toMillis() : 0;
+        const ta = a.lastUpdated && a.lastUpdated.toMillis ? a.lastUpdated.toMillis() : 0;
+        const tb = b.lastUpdated && b.lastUpdated.toMillis ? b.lastUpdated.toMillis() : 0;
         return tb - ta;
       });
       renderChats();
@@ -1517,11 +1623,11 @@ function renderChats() {
     return;
   }
   if (!chats.length) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="emoji">💬</div>
-      <div class="title">Здесь будут твои чаты</div>
-      <div class="desc">Откликнись на задание или напиши автору</div>
-    </div>`;
+    container.innerHTML = '<div class="empty-state">' +
+      '<div class="emoji">💬</div>' +
+      '<div class="title">Здесь будут твои чаты</div>' +
+      '<div class="desc">Откликнись на задание или напиши автору</div>' +
+    '</div>';
     return;
   }
   container.innerHTML = chats.map(chat => {
@@ -1529,17 +1635,15 @@ function renderChats() {
     const otherName = (chat.participantNames && chat.participantNames[otherId]) || 'Пользователь';
     const isSupport = otherId === SUPPORT_UID;
     const lastText = chat.lastMessage || 'Нет сообщений';
-    const time = chat.lastUpdated?.toDate ? formatTime(chat.lastUpdated.toDate()) : '';
-    return `
-      <div class="chat-list-item" onclick="openChatById('${escapeJs(chat.id)}')">
-        <div class="chat-avatar ${isSupport ? 'support' : ''}">${isSupport ? '💚' : escapeHtml((otherName || '?')[0].toUpperCase())}</div>
-        <div class="chat-list-body">
-          <div class="chat-list-name">${escapeHtml(otherName)}</div>
-          <div class="chat-list-last">${escapeHtml(lastText)}</div>
-        </div>
-        <div class="chat-list-time">${escapeHtml(time)}</div>
-      </div>
-    `;
+    const time = chat.lastUpdated && chat.lastUpdated.toDate ? formatTime(chat.lastUpdated.toDate()) : '';
+    return '<div class="chat-list-item" onclick="openChatById(\'' + escapeJs(chat.id) + '\')">' +
+      '<div class="chat-avatar ' + (isSupport ? 'support' : '') + '">' + (isSupport ? '💚' : escapeHtml((otherName || '?')[0].toUpperCase())) + '</div>' +
+      '<div class="chat-list-body">' +
+        '<div class="chat-list-name">' + escapeHtml(otherName) + '</div>' +
+        '<div class="chat-list-last">' + escapeHtml(lastText) + '</div>' +
+      '</div>' +
+      '<div class="chat-list-time">' + escapeHtml(time) + '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -1579,8 +1683,8 @@ async function openChatWith(otherUid, otherName) {
       const data = snap.data() || {};
       const names = data.participantNames || {};
       const patch = {};
-      if (!names[currentUser.uid]) patch[`participantNames.${currentUser.uid}`] = userName;
-      if (!names[otherUid]) patch[`participantNames.${otherUid}`] = otherName;
+      if (!names[currentUser.uid]) patch['participantNames.' + currentUser.uid] = userName;
+      if (!names[otherUid]) patch['participantNames.' + otherUid] = otherName;
       if (!data.lastMessage) patch['lastMessage'] = 'Нет сообщений';
       if (Object.keys(patch).length) {
         try { await chatRef.update(patch); } catch (_) {}
@@ -1604,7 +1708,7 @@ function openChatById(chatId) {
   document.getElementById('chatModal').classList.add('show');
   document.getElementById('chatInput').value = '';
   document.getElementById('chatMessages').innerHTML =
-    `<div style="text-align:center; color:#9CA3AF; font-size:13px;">Загрузка…</div>`;
+    '<div style="text-align:center; color:#9CA3AF; font-size:13px;">Загрузка…</div>';
 
   if (currentChatUnsub) currentChatUnsub();
 
@@ -1617,16 +1721,16 @@ function openChatById(chatId) {
     if (!chatDocData) return;
 
     if (!messagesList.length) {
-      box.innerHTML = `<div style="text-align:center; color:#9CA3AF; padding:30px; font-size:14px;">Нет сообщений. Напиши первым! 👋</div>`;
+      box.innerHTML = '<div style="text-align:center; color:#9CA3AF; padding:30px; font-size:14px;">Нет сообщений. Напиши первым! 👋</div>';
       return;
     }
 
     box.innerHTML = messagesList.map(m => {
       const isMe = m.senderId === currentUser.uid;
       const delBtn = isMe
-        ? `<span class="chat-del" onclick="deleteChatMessage('${escapeJs(m.id)}')" title="Удалить">🗑</span>`
+        ? '<span class="chat-del" onclick="deleteChatMessage(\'' + escapeJs(m.id) + '\')" title="Удалить">🗑</span>'
         : '';
-      return `<div class="chat-msg ${isMe ? 'me' : 'other'}">${escapeHtml(m.text)}<span class="chat-time">${escapeHtml(formatTime(new Date(m.time)))}${delBtn}</span></div>`;
+      return '<div class="chat-msg ' + (isMe ? 'me' : 'other') + '">' + escapeHtml(m.text) + '<span class="chat-time">' + escapeHtml(formatTime(new Date(m.time))) + delBtn + '</span></div>';
     }).join('');
     box.scrollTop = box.scrollHeight;
   };
@@ -1681,7 +1785,7 @@ async function sendChatMessage() {
 
   const msg = {
     senderId: currentUser.uid,
-    text,
+    text: text,
     time: new Date().toISOString(),
     hasPersonalData: false
   };
@@ -1775,50 +1879,49 @@ function renderMyResponses() {
   tasks.forEach(task => {
     (task.responses || []).forEach(r => {
       if (r.executorId === (currentUser && currentUser.uid)) {
-        mine.push({ task, response: r });
+        mine.push({ task: task, response: r });
       }
     });
   });
 
   if (!mine.length) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="emoji">📭</div>
-      <div class="title">Откликов пока нет</div>
-      <div class="desc">Найди интересное задание на главной</div>
-    </div>`;
+    container.innerHTML = '<div class="empty-state">' +
+      '<div class="emoji">📭</div>' +
+      '<div class="title">Откликов пока нет</div>' +
+      '<div class="desc">Найди интересное задание на главной</div>' +
+    '</div>';
     return;
   }
 
   container.innerHTML = mine.map(({ task, response }) => {
     const isClosed = task.status === 'closed';
-    return `
-    <div class="task-card ${getCategoryClass((task.categories || [])[0] || '')}${isClosed ? ' closed' : ''}">
-      <div class="task-title-row">
-        <span class="task-title">${escapeHtml(task.title)}</span>
-        <span class="task-price">${escapeHtml(task.priceValue)} ₽</span>
-      </div>
-      <div class="task-meta">
-        <span>👤 ${escapeHtml(task.author)}</span>
-        <span>${response.status === 'accepted' ? '✅ Принят' : response.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает'}</span>
-      </div>
-      <div class="task-actions">
-        <button class="btn-apply" onclick="openChatWith('${escapeJs(task.authorId)}','${escapeJs(task.author)}')">💬 Написать автору</button>
-      </div>
-    </div>`;
+    return '<div class="task-card ' + getCategoryClass((task.categories || [])[0] || '') + (isClosed ? ' closed' : '') + '">' +
+      '<div class="task-title-row">' +
+        '<span class="task-title">' + escapeHtml(task.title) + '</span>' +
+        '<span class="task-price">' + escapeHtml(task.priceValue) + ' ₽</span>' +
+      '</div>' +
+      '<div class="task-meta">' +
+        '<span>👤 ' + escapeHtml(task.author) + '</span>' +
+        '<span>' + (response.status === 'accepted' ? '✅ Принят' : response.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает') + '</span>' +
+      '</div>' +
+      '<div class="task-actions">' +
+        '<button class="btn-apply" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')">💬 Написать автору</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  document.querySelector('.tab[data-tab="' + tab + '"]').classList.add('active');
   renderTasks();
 }
 
 function switchNav(nav) {
   currentNav = nav;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const navBtn = document.querySelector(`.nav-item[data-nav="${nav}"]`);
+  const navBtn = document.querySelector('.nav-item[data-nav="' + nav + '"]');
   if (navBtn) navBtn.classList.add('active');
 
   document.getElementById('homeSection').style.display = nav === 'home' ? 'block' : 'none';
@@ -1851,7 +1954,7 @@ function renderCategoryChips(containerId, preselected) {
   const selected = new Set(Array.isArray(preselected) ? preselected : []);
   container.innerHTML = allCategories.map(c => {
     const cls = selected.has(c) ? 'modal-category selected' : 'modal-category';
-    return `<span class="${cls}" onclick="toggleCategory(this)">${escapeHtml(c)}</span>`;
+    return '<span class="' + cls + '" onclick="toggleCategory(this)">' + escapeHtml(c) + '</span>';
   }).join('');
 }
 function toggleCategory(el) { el.classList.toggle('selected'); }
@@ -1943,9 +2046,11 @@ async function addTask() {
   const wasCensored = (title !== rawTitle) || (desc !== rawDesc);
 
   const newTask = {
-    title, categories, price,
+    title: title,
+    categories: categories,
+    price: price,
     description: desc || 'Без описания',
-    deadline,
+    deadline: deadline,
     author: userName || 'Пользователь',
     authorId: currentUser ? currentUser.uid : 'unknown',
     rating: 5,
@@ -1986,7 +2091,7 @@ async function addTask() {
     } else if (wasCensored) {
       showToast('Опубликовано. Часть текста скрыта', 'warning');
     } else if (wasRounded) {
-      showToast(`Опубликовано. Цена округлена до ${price} ₽`, 'warning');
+      showToast('Опубликовано. Цена округлена до ' + price + ' ₽', 'warning');
     } else {
       showToast('Задание опубликовано!');
     }
