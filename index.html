@@ -369,7 +369,7 @@
     <input id="authPassword" type="password" placeholder="Пароль" maxlength="100">
     <label class="terms-checkbox" id="termsCheckbox">
       <input type="checkbox" id="termsAgree">
-      <span>Я принимаю <a href="privacy.html" target="_blank" rel="noopener">политику конфиденциальности</a> и правила сервиса</span>
+      <span>Я принимаю <a href="Privacy.html" target="_blank" rel="noopener">политику конфиденциальности</a> и правила сервиса</span>
     </label>
     <div class="forgot-link" id="forgotRow">
       <span onclick="resetPassword()">Забыли пароль?</span>
@@ -444,7 +444,7 @@
       <button class="profile-btn primary" onclick="switchNav('myResponses')">📋 Мои отклики</button>
       <button class="profile-btn" onclick="syncTelegramAvatar()">🔄 Обновить аватар из Telegram</button>
       <button class="profile-btn" onclick="openSupportChat()">💬 Поддержка</button>
-      <a class="profile-btn" href="privacy.html" target="_blank" rel="noopener">📄 Политика конфиденциальности</a>
+      <a class="profile-btn" href="Privacy.html" target="_blank" rel="noopener">📄 Политика конфиденциальности</a>
       <button class="profile-btn danger" onclick="logout()">🚪 Выйти из аккаунта</button>
     </div>
   </div>
@@ -568,6 +568,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+// Оверлей с техническими ошибками нужен только при отладке: локальный файл
+// или адрес с ?debug=1. Обычным пользователям он не показывается.
+const DEBUG_MODE = location.protocol === 'file:' || /[?&]debug=1/.test(location.search);
+
 function reportError(context, error) {
   const msg = (error && error.message) ? error.message : String(error);
   const code = (error && error.code) ? error.code : '';
@@ -576,7 +580,7 @@ function reportError(context, error) {
   try {
     const overlay = document.getElementById('debugOverlay');
     const textEl = document.getElementById('debugText');
-    if (overlay && textEl) {
+    if (DEBUG_MODE && overlay && textEl) {
       const line = '[' + new Date().toLocaleTimeString() + '] ' + context +
                    (code ? ' (' + code + ')' : '') + ': ' + msg;
       textEl.textContent = line + '\n\n' + (textEl.textContent || '');
@@ -756,8 +760,11 @@ function censorText(text) {
   let result = String(text);
 
   for (const bad of BAD_WORDS) {
+    // Экранируем спецсимволы: в списке есть "18+", и без экранирования плюс
+    // работал бы как квантификатор, маскируя обычные числа вроде 188.
+    const badEsc = String(bad).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(
-      `(^|[^a-zA-Zа-яА-Я0-9])([a-zA-Zа-яА-Я0-9]*${bad}[a-zA-Zа-яА-Я0-9]*)(?=$|[^a-zA-Zа-яА-Я0-9])`,
+      `(^|[^a-zA-Zа-яА-Я0-9])([a-zA-Zа-яА-Я0-9]*${badEsc}[a-zA-Zа-яА-Я0-9]*)(?=$|[^a-zA-Zа-яА-Я0-9])`,
       'gi'
     );
     result = result.replace(regex, (m, p1, token) => {
@@ -922,7 +929,10 @@ async function handleAuth() {
 
   let name = nameInput;
   if (!isLogin && !name && tgUser) {
-    name = ((tgUser.first_name || '') + (tgUser.last_name ? ' ' + tgUser.last_name : '')).trim();
+    // Правила Firestore ограничивают имя 50 символами, а Telegram допускает
+    // куда более длинные — обрезаем, иначе регистрация и создание заданий
+    // отклоняются базой с ошибкой доступа.
+    name = ((tgUser.first_name || '') + (tgUser.last_name ? ' ' + tgUser.last_name : '')).trim().slice(0, 50);
     if (!name) name = 'Пользователь';
   }
 
@@ -972,6 +982,12 @@ async function handleAuth() {
       document.getElementById('profileName').textContent = name;
       document.getElementById('profileEmail').textContent = email;
       renderProfileHeader();
+      // onAuthStateChanged срабатывает раньше, чем записан профиль, и успевает
+      // показать экран правил. Согласие уже дано чекбоксом — убираем его.
+      document.getElementById('termsContainer').classList.remove('active');
+      document.getElementById('appContainer').classList.add('active');
+      loadTasks();
+      startChatsListener();
     }
     document.getElementById('authContainer').classList.remove('active');
   } catch (err) {
@@ -1033,27 +1049,57 @@ async function resetPassword() {
 function logout() {
   if (chatsUnsub) { chatsUnsub(); chatsUnsub = null; }
   if (currentChatUnsub) { currentChatUnsub(); currentChatUnsub = null; }
-  auth.signOut();
+  auth.signOut().catch((e) => reportError('Выход', e));
+  // Закрываем чат и стираем переписку с экрана: устройством могут пользоваться другие
+  document.getElementById('chatModal').classList.remove('show');
+  document.getElementById('chatMessages').innerHTML = '';
+  currentChatId = null;
   document.getElementById('authContainer').classList.add('active');
   document.getElementById('appContainer').classList.remove('active');
   document.getElementById('termsContainer').classList.remove('active');
 }
 
-function acceptTerms() {
-  if (currentUser) {
-    const patch = {
-      name: userName,
-      email: currentUser.email,
-      termsAccepted: true
-    };
-    const photoURL = getTgPhotoUrl();
-    if (photoURL && !userPhotoURL) patch.photoURL = photoURL;
-    db.collection('users').doc(currentUser.uid).set(patch, { merge: true });
+async function acceptTerms() {
+  const openApp = () => {
+    document.getElementById('termsContainer').classList.remove('active');
+    document.getElementById('appContainer').classList.add('active');
+    loadTasks();
+    startChatsListener();
+  };
+
+  if (!currentUser) { openApp(); return; }
+
+  const ref = db.collection('users').doc(currentUser.uid);
+  try {
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      // Профиля ещё нет — создаём полный документ, как при регистрации.
+      // Если послать только termsAccepted, Firestore посчитает это созданием
+      // документа и отклонит запрос: правилам нужны все поля сразу.
+      await ref.set({
+        name: (userName || currentUser.displayName || 'Пользователь').slice(0, 50),
+        email: currentUser.email || '',
+        rating: 0,
+        completedTasks: 0,
+        nightOwlEarned: false,
+        termsAccepted: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      const patch = { termsAccepted: true };
+      if (userName) patch.name = userName;
+      const photoURL = getTgPhotoUrl();
+      if (photoURL && !userPhotoURL) patch.photoURL = photoURL;
+      await ref.set(patch, { merge: true });
+    }
+  } catch (e) {
+    // Не блокируем вход: согласие можно сохранить и позже
+    reportError('Принятие правил', e);
+    showToast('Согласие не сохранилось, но пользоваться можно', 'warning');
   }
-  document.getElementById('termsContainer').classList.remove('active');
-  document.getElementById('appContainer').classList.add('active');
-  loadTasks();
-  startChatsListener();
+
+  openApp();
 }
 
 async function syncTelegramAvatar() {
@@ -1173,7 +1219,9 @@ async function loadUserStats() {
     const h = new Date().getHours();
     const isNightNow = h >= 0 && h < 5;
 
-    if (isNightNow && !userStats.nightOwlEarned) {
+    // Пишем только если профиль уже существует: иначе Firestore воспримет
+    // это как создание документа и отклонит запрос из-за нехватки полей.
+    if (isNightNow && !userStats.nightOwlEarned && doc.exists) {
       userStats.nightOwlEarned = true;
       await ref.set({ nightOwlEarned: true }, { merge: true });
       showToast('🦉 Достижение: Сова!', 'success');
@@ -1720,12 +1768,19 @@ function openChatById(chatId) {
     const box = document.getElementById('chatMessages');
     if (!chatDocData) return;
 
+    // Приветствие поддержки показываем локально в интерфейсе: писать сообщение
+    // от имени другого пользователя правила Firestore не разрешают.
+    const isSupportChat = (chatDocData.participants || []).indexOf(SUPPORT_UID) !== -1;
+    const supportHint = isSupportChat
+      ? '<div class="chat-msg other" style="opacity:.9;">Привет! 👋 Это TeenWork Support. Опиши свою проблему, и мы поможем в течение дня. Не передавай пароль или личные данные.</div>'
+      : '';
+
     if (!messagesList.length) {
-      box.innerHTML = '<div style="text-align:center; color:#9CA3AF; padding:30px; font-size:14px;">Нет сообщений. Напиши первым! 👋</div>';
+      box.innerHTML = supportHint || '<div style="text-align:center; color:#9CA3AF; padding:30px; font-size:14px;">Нет сообщений. Напиши первым! 👋</div>';
       return;
     }
 
-    box.innerHTML = messagesList.map(m => {
+    box.innerHTML = supportHint + messagesList.map(m => {
       const isMe = m.senderId === currentUser.uid;
       const delBtn = isMe
         ? '<span class="chat-del" onclick="deleteChatMessage(\'' + escapeJs(m.id) + '\')" title="Удалить">🗑</span>'
@@ -1742,6 +1797,11 @@ function openChatById(chatId) {
     const otherName = (chatDocData.participantNames && chatDocData.participantNames[otherId]) || 'Пользователь';
     document.getElementById('chatTitle').textContent = otherName;
     renderMessages();
+  }, err => {
+    // Без этого в окне чата навсегда осталось бы «Загрузка…»
+    reportError('Слушатель чата', err);
+    showToast('Не удалось открыть чат', 'error');
+    closeChatModal();
   });
 
   const messagesUnsub = chatRef.collection('messages')
@@ -1806,26 +1866,9 @@ async function sendChatMessage() {
       showToast('Часть текста скрыта за недопустимые слова', 'warning');
     }
 
-    const chatDoc = await chatRef.get();
-    const data = chatDoc.data() || {};
-    const otherId = (data.participants || []).find(id => id !== currentUser.uid);
-    if (otherId === SUPPORT_UID) {
-      setTimeout(async () => {
-        const reply = {
-          senderId: SUPPORT_UID,
-          text: 'Привет! 👋 Это TeenWork Support. Опиши свою проблему, и мы поможем в течение дня. Если это что-то срочное — уточни детали и не передавай пароль или личные данные.',
-          time: new Date().toISOString(),
-          hasPersonalData: false
-        };
-        try {
-          await chatRef.collection('messages').add(reply);
-          await chatRef.update({
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-            lastMessage: reply.text.slice(0, 120)
-          });
-        } catch (e) { reportError('Ответ поддержки', e); }
-      }, 1200);
-    }
+    // Раньше здесь клиент писал сообщение от имени бота поддержки (senderId: SUPPORT_UID).
+    // Правила Firestore это запрещают, и правильно: иначе любой мог бы писать от имени поддержки.
+    // Приветствие поддержки теперь рисуется локально в renderMessages().
   } catch (e) {
     reportError('Отправка сообщения', e);
     showToast('Не удалось отправить', 'error');
@@ -1957,7 +2000,18 @@ function renderCategoryChips(containerId, preselected) {
     return '<span class="' + cls + '" onclick="toggleCategory(this)">' + escapeHtml(c) + '</span>';
   }).join('');
 }
-function toggleCategory(el) { el.classList.toggle('selected'); }
+function toggleCategory(el) {
+  // В правилах Firestore на задание разрешено максимум 5 категорий,
+  // поэтому ограничиваем выбор сразу в интерфейсе.
+  const container = el.parentElement;
+  const alreadySelected = el.classList.contains('selected');
+  const selectedCount = container.querySelectorAll('.selected').length;
+  if (!alreadySelected && selectedCount >= 5) {
+    showToast('Можно выбрать не больше 5 категорий', 'warning');
+    return;
+  }
+  el.classList.toggle('selected');
+}
 function getSelectedCategories(containerId) {
   return Array.from(document.getElementById(containerId).querySelectorAll('.selected')).map(el => el.textContent);
 }
@@ -2023,6 +2077,11 @@ async function addTask() {
   const price = parsePrice(rawPriceStr);
   if (price === null) {
     showToast('Введи корректную цену (целое положительное число)', 'warning');
+    release();
+    return;
+  }
+  if (price > 1000000) {
+    showToast('Максимальная цена — 1 000 000 ₽', 'warning');
     release();
     return;
   }
