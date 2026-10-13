@@ -1256,6 +1256,7 @@ async function loadTasks() {
         authorId: data.authorId || '',
         rating: (data.rating || 0),
         responses: responses,
+        responderIds: data.responderIds || [],
         status: data.status || 'open',
         acceptedExecutorId: data.acceptedExecutorId || null,
         createdAt: data.createdAt
@@ -1468,7 +1469,11 @@ async function applyForTask(taskId, btn) {
     showToast('Задание уже выполнено', 'warning');
     return;
   }
-  if ((task.responses || []).some(r => r.executorId === currentUser.uid)) {
+  // Дубль ловим и по откликам, и по массиву uid-ов: у новых заданий
+  // его проверяет ещё и сервер (см. правила Firestore)
+  const alreadyResponded = (task.responses || []).some(r => r.executorId === currentUser.uid)
+    || (task.responderIds || []).indexOf(currentUser.uid) !== -1;
+  if (alreadyResponded) {
     showToast('Ты уже откликнулся', 'warning');
     return;
   }
@@ -1497,9 +1502,11 @@ async function applyForTask(taskId, btn) {
 
   try {
     await db.collection('tasks').doc(task.id).update({
-      responses: firebase.firestore.FieldValue.arrayUnion(newResponse)
+      responses: firebase.firestore.FieldValue.arrayUnion(newResponse),
+      responderIds: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
     });
     task.responses = [...(task.responses || []), newResponse];
+    task.responderIds = [...(task.responderIds || []), currentUser.uid];
     if (btn) {
       btn.classList.add('success');
       btn.textContent = '✓ Отклик отправлен';
@@ -2114,6 +2121,7 @@ async function addTask() {
     authorId: currentUser ? currentUser.uid : 'unknown',
     rating: 5,
     responses: [],
+    responderIds: [],
     status: 'open',
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -2131,6 +2139,7 @@ async function addTask() {
       authorId: newTask.authorId,
       rating: newTask.rating,
       responses: [],
+      responderIds: [],
       status: 'open',
       acceptedExecutorId: null,
       createdAt: new Date()
