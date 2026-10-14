@@ -425,6 +425,12 @@
     <button class="fab" onclick="openAddModal()">➕ Создать</button>
   </div>
 
+  <div class="page" id="pageMyTasks">
+    <div class="page-header"><h2>📋 Мои задания</h2></div>
+    <div id="myTasksContainer"></div>
+    <button class="fab" onclick="openAddModal()">➕ Создать</button>
+  </div>
+
   <div class="page" id="pageChats"><div id="chatsContainer"></div></div>
 
   <div class="page" id="pageProfile">
@@ -472,6 +478,7 @@
 
   <div class="bottom-nav">
     <button class="nav-item active" data-nav="home" onclick="switchNav('home')"><span class="nav-icon">🏠</span><span>Главная</span></button>
+    <button class="nav-item" data-nav="myTasks" onclick="switchNav('myTasks')"><span class="nav-icon">📋</span><span>Мои</span></button>
     <button class="nav-item" data-nav="chat" onclick="switchNav('chat')"><span class="nav-icon">💬</span><span>Чаты</span></button>
     <button class="nav-item" data-nav="profile" onclick="switchNav('profile')"><span class="nav-icon">👤</span><span>Профиль</span></button>
   </div>
@@ -1414,6 +1421,9 @@ function renderTasks() {
   const container = document.getElementById('tasksContainer');
   const filtered = getFilteredTasks();
 
+  // Держим вкладку «Мои задания» в актуальном состоянии
+  renderMyTasks();
+
   if (!filtered.length) {
     container.innerHTML = '<div class="empty-state">' +
       '<div class="emoji">🔍</div>' +
@@ -1423,44 +1433,65 @@ function renderTasks() {
     return;
   }
 
-  container.innerHTML = filtered.map(task => {
-    const isMyTask = currentUser && task.authorId === currentUser.uid;
-    const myResponse = (task.responses || []).find(r => r.executorId === (currentUser && currentUser.uid));
-    const hasResponses = (task.responses || []).length > 0;
-    const isClosed = task.status === 'closed';
-    const newBadge = (!isClosed && isNewTask(task)) ? '<div class="task-badge-new">🔥 Новое</div>' : '';
-    const firstCat = (task.categories || [])[0] || '';
-    const cardClass = getCategoryClass(firstCat) + (isClosed ? ' closed' : '');
+  container.innerHTML = filtered.map(taskCardHtml).join('');
+}
 
-    let buttons = '';
-    if (isMyTask) {
-      const targetResp = (task.responses || []).find(r => r.status === 'accepted') || (task.responses || [])[0];
-      buttons = '<button class="btn-apply" disabled>📌 Моё задание</button>' +
-        (hasResponses ? '<button class="btn-chat" onclick="openResponsesModal(\'' + escapeJs(task.id) + '\')" title="Отклики">📋 ' + (task.responses || []).length + '</button>' : '') +
-        (targetResp ? '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(targetResp.executorId) + '\',\'' + escapeJs(targetResp.executor) + '\')" title="Чат с исполнителем">💬</button>' : '') +
-        '<button class="btn-delete" onclick="openDeleteModal(\'' + escapeJs(task.id) + '\')" title="Удалить">🗑</button>';
-    } else {
-      buttons = '<button class="btn-apply ' + (myResponse ? 'success' : '') + '" ' + (myResponse || isClosed ? 'disabled' : '') + ' onclick="applyForTask(\'' + escapeJs(task.id) + '\', this)">' +
-        (myResponse ? '✓ Отклик отправлен' : isClosed ? '✅ Задание выполнено' : '🚀 Откликнуться') + '</button>' +
-        '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')" title="Написать">💬</button>';
-    }
+// Одна карточка задания: используется и в общей ленте, и в «Моих заданиях»
+function taskCardHtml(task) {
+  const isMyTask = currentUser && task.authorId === currentUser.uid;
+  const myResponse = (task.responses || []).find(r => r.executorId === (currentUser && currentUser.uid));
+  const hasResponses = (task.responses || []).length > 0;
+  const isClosed = task.status === 'closed';
+  const newBadge = (!isClosed && isNewTask(task)) ? '<div class="task-badge-new">🔥 Новое</div>' : '';
+  const firstCat = (task.categories || [])[0] || '';
+  const cardClass = getCategoryClass(firstCat) + (isClosed ? ' closed' : '');
 
-    return '<div class="task-card ' + cardClass + '">' +
-      newBadge +
-      '<div class="task-categories">' + (task.categories || []).map(c => '<span class="task-category ' + getCategoryClass(c) + '">' + escapeHtml(c) + '</span>').join('') + '</div>' +
-      '<div class="task-title-row">' +
-        '<span class="task-title">' + escapeHtml(task.title) + '</span>' +
-        '<span class="task-price">' + escapeHtml(task.priceValue) + ' ₽</span>' +
-      '</div>' +
-      '<div class="task-desc">' + escapeHtml(task.description || '') + '</div>' +
-      '<div class="task-meta">' +
-        '<span>👤 ' + escapeHtml(task.author) + '</span>' +
-        '<span>⭐ ' + escapeHtml(task.rating) + '</span>' +
-        '<span>⏱ ' + escapeHtml(task.deadline) + '</span>' +
-      '</div>' +
-      '<div class="task-actions">' + buttons + '</div>' +
+  let buttons = '';
+  if (isMyTask) {
+    const targetResp = (task.responses || []).find(r => r.status === 'accepted') || (task.responses || [])[0];
+    buttons = '<button class="btn-apply" disabled>📌 Моё задание</button>' +
+      (hasResponses ? '<button class="btn-chat" onclick="openResponsesModal(\'' + escapeJs(task.id) + '\')" title="Отклики">📋 ' + (task.responses || []).length + '</button>' : '') +
+      (targetResp ? '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(targetResp.executorId) + '\',\'' + escapeJs(targetResp.executor) + '\')" title="Чат с исполнителем">💬</button>' : '') +
+      '<button class="btn-delete" onclick="openDeleteModal(\'' + escapeJs(task.id) + '\')" title="Удалить">🗑</button>';
+  } else {
+    buttons = '<button class="btn-apply ' + (myResponse ? 'success' : '') + '" ' + (myResponse || isClosed ? 'disabled' : '') + ' onclick="applyForTask(\'' + escapeJs(task.id) + '\', this)">' +
+      (myResponse ? '✓ Отклик отправлен' : isClosed ? '✅ Задание выполнено' : '🚀 Откликнуться') + '</button>' +
+      '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')" title="Написать">💬</button>';
+  }
+
+  return '<div class="task-card ' + cardClass + '">' +
+    newBadge +
+    '<div class="task-categories">' + (task.categories || []).map(c => '<span class="task-category ' + getCategoryClass(c) + '">' + escapeHtml(c) + '</span>').join('') + '</div>' +
+    '<div class="task-title-row">' +
+      '<span class="task-title">' + escapeHtml(task.title) + '</span>' +
+      '<span class="task-price">' + escapeHtml(task.priceValue) + ' ₽</span>' +
+    '</div>' +
+    '<div class="task-desc">' + escapeHtml(task.description || '') + '</div>' +
+    '<div class="task-meta">' +
+      '<span>👤 ' + escapeHtml(task.author) + '</span>' +
+      '<span>⭐ ' + escapeHtml(task.rating) + '</span>' +
+      '<span>⏱ ' + escapeHtml(task.deadline) + '</span>' +
+    '</div>' +
+    '<div class="task-actions">' + buttons + '</div>' +
+  '</div>';
+}
+
+// Вкладка «Мои задания»: только задания, где я автор
+function renderMyTasks() {
+  const container = document.getElementById('myTasksContainer');
+  if (!container || !currentUser) return;
+
+  const mine = tasks.filter(t => t.authorId === currentUser.uid);
+  if (!mine.length) {
+    container.innerHTML = '<div class="empty-state">' +
+      '<div class="emoji">📋</div>' +
+      '<div class="title">Тут появятся твои задания</div>' +
+      '<div class="desc">Нажми «➕ Создать» — задание окажется здесь вместе со всеми откликами.</div>' +
     '</div>';
-  }).join('');
+    return;
+  }
+
+  container.innerHTML = mine.map(taskCardHtml).join('');
 }
 
 function openDeleteModal(taskId) {
@@ -2024,11 +2055,13 @@ function switchNav(nav) {
   if (navBtn) navBtn.classList.add('active');
 
   document.getElementById('homeSection').style.display = nav === 'home' ? 'block' : 'none';
+  document.getElementById('pageMyTasks').style.display = nav === 'myTasks' ? 'block' : 'none';
   document.getElementById('pageChats').style.display = nav === 'chat' ? 'block' : 'none';
   document.getElementById('pageProfile').style.display = nav === 'profile' ? 'block' : 'none';
   document.getElementById('pageMyResponses').style.display = nav === 'myResponses' ? 'block' : 'none';
 
   if (nav === 'home') renderTasks();
+  if (nav === 'myTasks') renderMyTasks();
   if (nav === 'chat') renderChats();
   if (nav === 'myResponses') renderMyResponses();
   if (nav === 'profile') updateProfileStats();
