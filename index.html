@@ -7,6 +7,7 @@
 <meta name="description" content="TeenWork — работа для подростков. Находи простые задания, зарабатывай и прокачивай уровень.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧑‍💻</text></svg>">
 <title>TeenWork</title>
+<meta name="robots" content="noindex, nofollow">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -348,6 +349,18 @@
 </head>
 <body>
 
+<!-- Закрытый доступ: виден, пока не введён код. Чтобы снять — удали этот блок и код в скрипте. -->
+<div id="accessGate" style="display:none; position:fixed; inset:0; z-index:100000; background:linear-gradient(135deg,#7C3AED 0%,#4C1D95 100%); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:22px; padding:28px; max-width:360px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.35);">
+    <div style="font-size:46px;">🔒</div>
+    <div style="font-size:19px; font-weight:800; margin:8px 0 6px; color:#1A1A2E;">TeenWork — закрытый доступ</div>
+    <div style="font-size:14px; color:#6B7280; margin-bottom:18px;">Сайт в разработке. Введи код доступа, чтобы продолжить.</div>
+    <input id="accessInput" type="password" placeholder="Код доступа" onkeydown="if(event.key==='Enter') checkAccess();" style="width:100%; padding:13px 14px; border:2px solid #EDE9FE; border-radius:12px; font-size:15px; margin-bottom:10px; outline:none; box-sizing:border-box;">
+    <div id="accessError" style="display:none; color:#EF4444; font-size:13px; margin-bottom:10px;">Неверный код</div>
+    <button onclick="checkAccess()" style="width:100%; padding:14px; background:linear-gradient(135deg,#7C3AED 0%,#5B21B6 100%); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer;">Войти</button>
+  </div>
+</div>
+
 <div id="debugOverlay"><button class="dbg-close" onclick="document.getElementById('debugOverlay').classList.remove('show')">✕</button><div id="debugText"></div></div>
 
 <div class="splash" id="splashScreen">
@@ -537,6 +550,42 @@
 <div class="toast" id="toast"><span class="toast-icon">✅</span><span id="toastText"></span></div>
 
 <script>
+// ---------------------------------------------------------------------------
+//  Закрытый доступ: сайт показывается только тем, кто знает код.
+//  ВАЖНО: это не защита данных — код виден в исходнике страницы. Данные
+//  защищают правила Firestore. Здесь цель — не пускать случайных людей
+//  и поисковые роботы.
+// ---------------------------------------------------------------------------
+const ACCESS_CODE = 'teenwork-2026';   // ← свой код поменяй здесь
+
+function checkAccess() {
+  const input = document.getElementById('accessInput');
+  const err = document.getElementById('accessError');
+  if (input && input.value.trim() === ACCESS_CODE) {
+    try { localStorage.setItem('tw_access', '1'); } catch (e) {}
+    const gate = document.getElementById('accessGate');
+    if (gate) gate.style.display = 'none';
+    document.body.style.overflow = '';
+  } else if (err) {
+    err.style.display = 'block';
+  }
+}
+
+(function initAccessGate() {
+  try {
+    const params = new URLSearchParams(location.search);
+    // ?access=off — сбросить доступ, ?access=КОД — войти сразу по ссылке
+    if (params.get('access') === 'off') localStorage.removeItem('tw_access');
+    if (params.get('access') === ACCESS_CODE) localStorage.setItem('tw_access', '1');
+    if (localStorage.getItem('tw_access') === '1') return;
+    const gate = document.getElementById('accessGate');
+    if (gate) {
+      gate.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  } catch (e) { /* если localStorage недоступен — сайт не блокируем */ }
+})();
+
 const firebaseConfig = {
   apiKey: "AIzaSyC-iQlfApMYsg8vOw7Xtkub_6dTDVAjE5Y",
   authDomain: "teenwork-e02f2.firebaseapp.com",
