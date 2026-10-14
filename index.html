@@ -187,7 +187,9 @@
   .btn-delete:active { transform: scale(.94); }
 
   .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 8px 0 calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--divider); z-index: 50; box-shadow: 0 -4px 20px rgba(124,58,237,.08); }
-  .nav-item { min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; color: #9CA3AF; cursor: pointer; padding: 6px 14px; border: none; background: none; font-family: inherit; font-weight: 600; transition: color .2s; border-radius: 12px; }
+  .nav-item { position: relative; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; color: #9CA3AF; cursor: pointer; padding: 6px 14px; border: none; background: none; font-family: inherit; font-weight: 600; transition: color .2s; border-radius: 12px; }
+  .nav-badge { position: absolute; top: 2px; right: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,.45); }
+  .chat-unread { width: 10px; height: 10px; border-radius: 50%; background: var(--red); flex-shrink: 0; margin-left: 6px; box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
   .nav-item.active { color: var(--violet); }
   .nav-item.active .nav-icon { transform: scale(1.15); filter: drop-shadow(0 4px 8px rgba(124,58,237,.4)); }
   .nav-item .nav-icon { font-size: 22px; transition: transform .2s; }
@@ -479,7 +481,7 @@
   <div class="bottom-nav">
     <button class="nav-item active" data-nav="home" onclick="switchNav('home')"><span class="nav-icon">🏠</span><span>Главная</span></button>
     <button class="nav-item" data-nav="myTasks" onclick="switchNav('myTasks')"><span class="nav-icon">📋</span><span>Мои</span></button>
-    <button class="nav-item" data-nav="chat" onclick="switchNav('chat')"><span class="nav-icon">💬</span><span>Чаты</span></button>
+    <button class="nav-item" data-nav="chat" onclick="switchNav('chat')"><span class="nav-icon">💬</span><span>Чаты</span><span class="nav-badge" id="chatNavBadge" style="display:none;">0</span></button>
     <button class="nav-item" data-nav="profile" onclick="switchNav('profile')"><span class="nav-icon">👤</span><span>Профиль</span></button>
   </div>
 </div>
@@ -1750,11 +1752,63 @@ function startChatsListener() {
     });
 }
 
+// ---------------------------------------------------------------------------
+//  Непрочитанные сообщения. Отметки «до какого момента прочитано» хранятся
+//  локально в браузере, отдельно для каждого аккаунта — правила Firestore
+//  менять не нужно. Если зайти с другого устройства, счётчик начнётся заново.
+// ---------------------------------------------------------------------------
+function readMarksKey() {
+  return 'tw_read_' + (currentUser ? currentUser.uid : 'anon');
+}
+
+function getReadMarks() {
+  try { return JSON.parse(localStorage.getItem(readMarksKey()) || '{}') || {}; } catch (e) { return {}; }
+}
+
+// Время последнего изменения чата в миллисекундах
+function chatLastMs(chat) {
+  const v = chat && chat.lastUpdated;
+  if (!v) return 0;
+  if (typeof v.toMillis === 'function') return v.toMillis();
+  if (typeof v.seconds === 'number') return v.seconds * 1000;
+  const t = Date.parse(v);
+  return isFinite(t) ? t : 0;
+}
+
+function isChatUnread(chat) {
+  const last = chatLastMs(chat);
+  if (!last) return false;
+  return last > (getReadMarks()[chat.id] || 0);
+}
+
+// Отмечаем чат прочитанным до его текущего lastUpdated
+function markChatRead(chatId, chatData) {
+  try {
+    const last = chatLastMs(chatData);
+    if (!last) return;
+    const marks = getReadMarks();
+    if ((marks[chatId] || 0) >= last) return;
+    marks[chatId] = last;
+    localStorage.setItem(readMarksKey(), JSON.stringify(marks));
+    renderChats();
+  } catch (e) {}
+}
+
+function updateChatBadge() {
+  const badge = document.getElementById('chatNavBadge');
+  if (!badge) return;
+  if (!currentUser) { badge.style.display = 'none'; return; }
+  const n = chats.filter(isChatUnread).length;
+  badge.textContent = n > 9 ? '9+' : String(n);
+  badge.style.display = n > 0 ? 'flex' : 'none';
+}
+
 function renderChats() {
   const container = document.getElementById('chatsContainer');
   if (!container) return;
   if (!currentUser) {
     container.innerHTML = '';
+    updateChatBadge();
     return;
   }
   if (!chats.length) {
@@ -1763,6 +1817,7 @@ function renderChats() {
       '<div class="title">Здесь будут твои чаты</div>' +
       '<div class="desc">Откликнись на задание или напиши автору</div>' +
     '</div>';
+    updateChatBadge();
     return;
   }
   container.innerHTML = chats.map(chat => {
@@ -1771,15 +1826,18 @@ function renderChats() {
     const isSupport = otherId === SUPPORT_UID;
     const lastText = chat.lastMessage || 'Нет сообщений';
     const time = chat.lastUpdated && chat.lastUpdated.toDate ? formatTime(chat.lastUpdated.toDate()) : '';
+    const unread = isChatUnread(chat);
     return '<div class="chat-list-item" onclick="openChatById(\'' + escapeJs(chat.id) + '\')">' +
       '<div class="chat-avatar ' + (isSupport ? 'support' : '') + '">' + (isSupport ? '💚' : escapeHtml((otherName || '?')[0].toUpperCase())) + '</div>' +
       '<div class="chat-list-body">' +
         '<div class="chat-list-name">' + escapeHtml(otherName) + '</div>' +
         '<div class="chat-list-last">' + escapeHtml(lastText) + '</div>' +
       '</div>' +
+      (unread ? '<span class="chat-unread" title="Новое сообщение"></span>' : '') +
       '<div class="chat-list-time">' + escapeHtml(time) + '</div>' +
     '</div>';
   }).join('');
+  updateChatBadge();
 }
 
 function buildChatId(uidA, uidB) {
@@ -1880,6 +1938,8 @@ function openChatById(chatId) {
   const docUnsub = chatRef.onSnapshot(doc => {
     if (!doc.exists) return;
     chatDocData = doc.data();
+    // Пока чат открыт — считаем его прочитанным (это же гасит счётчик)
+    markChatRead(chatId, chatDocData);
     const otherId = (chatDocData.participants || []).find(id => id !== currentUser.uid);
     const otherName = (chatDocData.participantNames && chatDocData.participantNames[otherId]) || 'Пользователь';
     document.getElementById('chatTitle').textContent = otherName;
