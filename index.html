@@ -8,6 +8,11 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧑‍💻</text></svg>">
 <title>TeenWork</title>
 <meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TeenWork">
+<link rel="apple-touch-icon" href="icons/Icon-192.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -126,6 +131,9 @@
   .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
   .tab { padding: 9px 22px; border-radius: 22px; border: 2px solid var(--divider); background: var(--surface); font-size: 14px; cursor: pointer; white-space: nowrap; font-weight: 600; color: var(--text2); font-family: inherit; transition: all .2s; }
   .tab.active { background: var(--grad-main); color: white; border-color: transparent; box-shadow: var(--shadow-md); }
+  .sort-row { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+  .sort-chip { padding: 7px 14px; border-radius: 18px; border: 2px solid var(--divider); background: var(--surface); font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; white-space: nowrap; font-family: inherit; transition: all .2s; }
+  .sort-chip.active { background: var(--grad-accent); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(59,130,246,.3); }
 
   .task-card { background: var(--surface); border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; border-left: 5px solid var(--violet); }
   .task-card:active { transform: scale(.99); }
@@ -422,6 +430,12 @@
     <div class="tabs" id="tabsContainer">
       <button class="tab active" data-tab="all" onclick="switchTab('all')">✨ Все</button>
       <button class="tab" data-tab="recommended" onclick="switchTab('recommended')">🎯 Для тебя</button>
+    </div>
+
+    <div class="sort-row" id="sortRow">
+      <button class="sort-chip active" data-sort="new" onclick="setSort('new')">🔥 Новые</button>
+      <button class="sort-chip" data-sort="price-desc" onclick="setSort('price-desc')">💰 Дороже</button>
+      <button class="sort-chip" data-sort="price-asc" onclick="setSort('price-asc')">🪙 Дешевле</button>
     </div>
     <div id="tasksContainer"></div>
     <button class="fab" onclick="openAddModal()">➕ Создать</button>
@@ -909,6 +923,8 @@ function avatarMiniHtml(photoURL, fallbackName) {
 let tasks = [];
 let chats = [];
 let currentTab = 'all';
+// Сортировка ленты: new | price-desc | price-asc
+let currentSort = 'new';
 let currentNav = 'home';
 let filterCategories = [];
 let currentUser = null;
@@ -1383,12 +1399,23 @@ function updateProfileStats() {
 }
 
 function getFilteredTasks() {
-  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const search = searchNormalize(document.getElementById('searchInput').value);
   let filtered = tasks.filter(t => {
     if ((t.status || 'open') !== 'closed') return true;
     return currentUser && t.authorId === currentUser.uid;
   });
-  if (search) filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(search));
+  if (search) {
+    // Ищем не только в заголовке, но и в описании, категориях и имени автора
+    filtered = filtered.filter(t => {
+      const haystack = searchNormalize([
+        t.title || '',
+        t.description || '',
+        t.author || '',
+        (t.categories || []).join(' ')
+      ].join(' '));
+      return haystack.includes(search);
+    });
+  }
   if (filterCategories.length) {
     filtered = filtered.filter(t =>
       (t.categories || []).some(c => filterCategories.includes(c))
@@ -1401,6 +1428,43 @@ function getFilteredTasks() {
     );
   }
   return filtered;
+}
+
+// Мягкая нормализация для поиска: регистр и ё → е.
+// Отдельная от normalize(), потому что та ещё и меняет цифры на буквы (для модерации).
+function searchNormalize(text) {
+  return String(text == null ? '' : text).toLowerCase().replace(/ё/g, 'е').trim();
+}
+
+// Время создания задания в миллисекундах (Date, Firestore Timestamp, секунды, строка)
+function taskCreatedMs(task) {
+  const v = task && task.createdAt;
+  if (!v) return 0;
+  if (typeof v.toMillis === 'function') return v.toMillis();
+  if (v instanceof Date) return v.getTime();
+  if (typeof v.seconds === 'number') return v.seconds * 1000;
+  const t = Date.parse(v);
+  return isFinite(t) ? t : 0;
+}
+
+function sortTasks(list) {
+  const arr = list.slice();
+  if (currentSort === 'price-desc') {
+    arr.sort((a, b) => (b.priceValue || 0) - (a.priceValue || 0));
+  } else if (currentSort === 'price-asc') {
+    arr.sort((a, b) => (a.priceValue || 0) - (b.priceValue || 0));
+  } else {
+    arr.sort((a, b) => taskCreatedMs(b) - taskCreatedMs(a));
+  }
+  return arr;
+}
+
+function setSort(sort) {
+  currentSort = sort;
+  document.querySelectorAll('.sort-chip').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-sort') === sort);
+  });
+  renderTasks();
 }
 
 function isNewTask(task) {
@@ -1435,7 +1499,7 @@ function renderTasks() {
     return;
   }
 
-  container.innerHTML = filtered.map(taskCardHtml).join('');
+  container.innerHTML = sortTasks(filtered).map(taskCardHtml).join('');
 }
 
 // Одна карточка задания: используется и в общей ленте, и в «Моих заданиях»
@@ -1493,7 +1557,7 @@ function renderMyTasks() {
     return;
   }
 
-  container.innerHTML = mine.map(taskCardHtml).join('');
+  container.innerHTML = sortTasks(mine).map(taskCardHtml).join('');
 }
 
 function openDeleteModal(taskId) {
