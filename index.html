@@ -136,6 +136,8 @@
   .sort-chip.active { background: var(--grad-accent); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(59,130,246,.3); }
 
   .task-card { background: var(--surface); border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; border-left: 5px solid var(--violet); }
+  .task-card.flash { animation: flashCard 1.3s ease 2; }
+  @keyframes flashCard { 0%, 100% { box-shadow: var(--shadow-sm); } 50% { box-shadow: 0 0 0 4px rgba(124,58,237,.45), var(--shadow-lg); } }
   .task-card:active { transform: scale(.99); }
   .task-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; background: var(--grad-main); border-radius: 50%; opacity: .04; pointer-events: none; }
   .task-card.cat-texts { border-left-color: #7C3AED; }
@@ -636,6 +638,62 @@ try {
   }
 } catch (e) { console.warn('Telegram WebApp init failed', e); }
 
+// --- Telegram-мелочи: вибрация и системная кнопка «Назад» ---
+function tgApp() {
+  return (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+}
+
+// Вибрация: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning' | 'select'
+function haptic(type) {
+  try {
+    const tg = tgApp();
+    if (!tg || !tg.HapticFeedback) return;
+    if (type === 'success' || type === 'error' || type === 'warning') {
+      tg.HapticFeedback.notificationOccurred(type);
+    } else if (type === 'select') {
+      tg.HapticFeedback.selectionChanged();
+    } else {
+      tg.HapticFeedback.impactOccurred(type || 'light');
+    }
+  } catch (e) {}
+}
+
+let tgBackVisible = false;
+function updateTgBackButton() {
+  const tg = tgApp();
+  if (!tg || !tg.BackButton) return;
+  const chat = document.getElementById('chatModal');
+  const need = (chat && chat.classList.contains('show')) ||
+    !!document.querySelector('.modal-overlay.show');
+  if (need === tgBackVisible) return;
+  tgBackVisible = need;
+  try { need ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) {}
+}
+
+function handleTgBack() {
+  const chat = document.getElementById('chatModal');
+  if (chat && chat.classList.contains('show')) { closeChatModal(); return; }
+  const modals = Array.from(document.querySelectorAll('.modal-overlay.show'));
+  if (modals.length) {
+    modals[modals.length - 1].classList.remove('show');
+    updateTgBackButton();
+    return;
+  }
+  if (currentNav !== 'home') { switchNav('home'); return; }
+  const tg = tgApp();
+  if (tg && typeof tg.close === 'function') tg.close();
+}
+
+try {
+  const tg = tgApp();
+  if (tg && tg.BackButton && typeof tg.BackButton.onClick === 'function') {
+    tg.BackButton.onClick(handleTgBack);
+  }
+  // Кнопка «назад» появляется, когда открыт чат или модалка
+  const obs = new MutationObserver(() => updateTgBackButton());
+  obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+} catch (e) { console.warn('Telegram back button init failed', e); }
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -891,6 +949,7 @@ function escapeJs(s) {
 }
 
 function showToast(msg, type = 'success') {
+  haptic(type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success');
   const t = document.getElementById('toast');
   if (!t) return;
   const txt = document.getElementById('toastText');
@@ -1461,10 +1520,53 @@ function sortTasks(list) {
 
 function setSort(sort) {
   currentSort = sort;
+  haptic('select');
   document.querySelectorAll('.sort-chip').forEach(el => {
     el.classList.toggle('active', el.getAttribute('data-sort') === sort);
   });
   renderTasks();
+}
+
+// «Поделиться» заданием: внутри Telegram — через его шаринг, иначе нативный, иначе копируем ссылку
+function shareTask(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const url = location.origin + location.pathname + '?task=' + encodeURIComponent(taskId);
+  const text = task.title + ' — ' + task.priceValue + ' ₽ · TeenWork';
+
+  const tg = tgApp();
+  if (tg && tg.initData && typeof tg.openTelegramLink === 'function') {
+    try {
+      tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(url) +
+        '&text=' + encodeURIComponent(text));
+      return;
+    } catch (e) {}
+  }
+  if (navigator.share) {
+    navigator.share({ title: 'TeenWork', text: text, url: url }).catch(() => {});
+    return;
+  }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Ссылка скопирована'))
+      .catch(() => showToast('Не удалось скопировать', 'error'));
+  } else {
+    showToast('Ссылка: ' + url, 'warning');
+  }
+}
+
+// Подсветить задание, если перешли по ссылке ?task=…
+let sharedTaskShown = false;
+function openSharedTask() {
+  if (sharedTaskShown) return;
+  const id = new URLSearchParams(location.search).get('task');
+  if (!id) return;
+  const el = document.getElementById('task-' + id);
+  if (!el) return;
+  sharedTaskShown = true;
+  try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 2600);
 }
 
 function isNewTask(task) {
@@ -1500,6 +1602,9 @@ function renderTasks() {
   }
 
   container.innerHTML = sortTasks(filtered).map(taskCardHtml).join('');
+
+  // Если пришли по ссылке «Поделиться» — подсветим нужное задание
+  openSharedTask();
 }
 
 // Одна карточка задания: используется и в общей ленте, и в «Моих заданиях»
@@ -1525,7 +1630,9 @@ function taskCardHtml(task) {
       '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')" title="Написать">💬</button>';
   }
 
-  return '<div class="task-card ' + cardClass + '">' +
+  buttons += '<button class="btn-chat" onclick="shareTask(\'' + escapeJs(task.id) + '\')" title="Поделиться">📤</button>';
+
+  return '<div class="task-card ' + cardClass + '" id="task-' + escapeJs(task.id) + '">' +
     newBadge +
     '<div class="task-categories">' + (task.categories || []).map(c => '<span class="task-category ' + getCategoryClass(c) + '">' + escapeHtml(c) + '</span>').join('') + '</div>' +
     '<div class="task-title-row">' +
@@ -2223,6 +2330,7 @@ function toggleCategory(el) {
     showToast('Можно выбрать не больше 5 категорий', 'warning');
     return;
   }
+  haptic('select');
   el.classList.toggle('selected');
 }
 function getSelectedCategories(containerId) {
