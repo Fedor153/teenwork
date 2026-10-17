@@ -307,6 +307,10 @@
   .page-header button:hover { border-color: var(--violet); }
   .page-header h2 { font-size: 19px; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
 
+  .review-star { font-size: 34px; cursor: pointer; color: #D1D5DB; transition: transform .15s, color .15s; user-select: none; }
+  .review-star.on { color: #F59E0B; }
+  .review-star:active { transform: scale(.9); }
+
   .check-anim { position: fixed; inset: 0; background: rgba(26,26,46,.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 400; }
   .check-anim.show { display: flex; }
   .check-circle { width: 120px; height: 120px; border-radius: 50%; background: var(--grad-green); display: flex; align-items: center; justify-content: center; font-size: 60px; color: white; box-shadow: 0 12px 40px rgba(16,185,129,.5); animation: checkPop .5s cubic-bezier(.34,1.56,.64,1); }
@@ -536,6 +540,25 @@
     <div id="responsesList"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeResponsesModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <div class="modal-title" id="reviewTitle">⭐ Оставить отзыв</div>
+    <div style="color: var(--text2); font-size: 14px; margin-bottom: 6px;" id="reviewSubtitle"></div>
+    <div class="review-stars" id="reviewStars">
+      <span class="review-star" data-star="1" onclick="setReviewStar(1)">☆</span>
+      <span class="review-star" data-star="2" onclick="setReviewStar(2)">☆</span>
+      <span class="review-star" data-star="3" onclick="setReviewStar(3)">☆</span>
+      <span class="review-star" data-star="4" onclick="setReviewStar(4)">☆</span>
+      <span class="review-star" data-star="5" onclick="setReviewStar(5)">☆</span>
+    </div>
+    <textarea id="reviewText" placeholder="Расскажи, как всё прошло (необязательно)" maxlength="300" style="width:100%; min-height:80px; padding:13px 14px; border:2px solid var(--divider); border-radius:12px; font-size:14px; margin-bottom:12px; outline:none; font-family:inherit; background:#FAFAFF; resize:vertical; box-sizing:border-box;"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeReviewModal()">Отмена</button>
+      <button class="btn-submit" onclick="submitReview()">Отправить</button>
     </div>
   </div>
 </div>
@@ -980,7 +1003,8 @@ function avatarMiniHtml(photoURL, fallbackName) {
 }
 
 let tasks = [];
-let chats = [];
+let reviews = [];
+let userRatings = {};
 let currentTab = 'all';
 // Сортировка ленты: new | price-desc | price-asc
 let currentSort = 'new';
@@ -1365,7 +1389,127 @@ async function loadUserStats() {
   }
 }
 
+async function loadReviews() {
+  try {
+    const snap = await db.collection('reviews').get();
+    reviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rebuildUserRatings();
+  } catch (e) {
+    reportError('Загрузка отзывов', e);
+  }
+}
+
+// Средний рейтинг и число отзывов по каждому uid
+function rebuildUserRatings() {
+  const map = {};
+  reviews.forEach(r => {
+    if (!r || !r.toUid) return;
+    const item = map[r.toUid] || (map[r.toUid] = { sum: 0, count: 0 });
+    item.sum += Number(r.rating) || 0;
+    item.count += 1;
+  });
+  userRatings = map;
+}
+
+// Что показываем на карточке вместо фиктивной «⭐ 5»
+function ratingHtml(uid) {
+  const r = userRatings[uid];
+  if (!r || !r.count) return '<span title="Отзывов пока нет">✨ Новый</span>';
+  const avg = (r.sum / r.count).toFixed(1).replace(/\.0$/, '');
+  return '<span title="Отзывы: ' + r.count + '">⭐ ' + avg + ' (' + r.count + ')</span>';
+}
+
+// --- Оставление отзыва ---
+let reviewTaskId = null;
+let reviewStar = 5;
+
+function openReviewModal(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task || !currentUser) return;
+  const iAmAuthor = task.authorId === currentUser.uid;
+  const toUid = iAmAuthor ? task.acceptedExecutorId : task.authorId;
+  if (!toUid || toUid === currentUser.uid) {
+    showToast('Отзыв пока недоступен', 'warning');
+    return;
+  }
+  reviewTaskId = taskId;
+  reviewStar = 5;
+  document.getElementById('reviewTitle').textContent =
+    iAmAuthor ? '⭐ Оцени исполнителя' : '⭐ Оцени заказчика';
+  document.getElementById('reviewSubtitle').textContent = task.title || '';
+  document.getElementById('reviewText').value = '';
+  renderReviewStars();
+  document.getElementById('reviewModal').classList.add('show');
+}
+
+function closeReviewModal() {
+  reviewTaskId = null;
+  document.getElementById('reviewModal').classList.remove('show');
+}
+
+function setReviewStar(n) {
+  reviewStar = n;
+  haptic('select');
+  renderReviewStars();
+}
+
+function renderReviewStars() {
+  document.querySelectorAll('#reviewStars .review-star').forEach(el => {
+    const n = Number(el.getAttribute('data-star'));
+    el.textContent = n <= reviewStar ? '★' : '☆';
+    el.classList.toggle('on', n <= reviewStar);
+  });
+}
+
+async function submitReview() {
+  if (!reviewTaskId || !currentUser) return;
+  const task = tasks.find(t => t.id === reviewTaskId);
+  if (!task) return;
+
+  const iAmAuthor = task.authorId === currentUser.uid;
+  const toUid = iAmAuthor ? task.acceptedExecutorId : task.authorId;
+  if (!toUid || toUid === currentUser.uid) return;
+
+  const text = document.getElementById('reviewText').value.trim().slice(0, 300);
+  const toName = iAmAuthor
+    ? (((task.responses || []).find(r => r.executorId === toUid) || {}).executor || 'Исполнитель')
+    : (task.author || 'Заказчик');
+
+  const review = {
+    taskId: task.id,
+    taskTitle: String(task.title || '').slice(0, 100),
+    fromUid: currentUser.uid,
+    fromName: String(userName || 'Пользователь').slice(0, 50),
+    toUid: toUid,
+    toName: String(toName || '').slice(0, 50),
+    rating: reviewStar,
+    text: text,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  const btn = document.querySelector('#reviewModal .btn-submit');
+  const original = btn ? btn.textContent : 'Отправить';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Отправка...'; }
+
+  try {
+    // id = taskId__uid: повторный отзыв по тому же заданию не создастся
+    const reviewId = task.id + '__' + currentUser.uid;
+    await db.collection('reviews').doc(reviewId).set(review);
+    reviews.push({ id: reviewId, ...review });
+    rebuildUserRatings();
+    closeReviewModal();
+    showToast('Спасибо за отзыв!');
+    renderTasks();
+  } catch (e) {
+    reportError('Отправка отзыва', e);
+    showToast('Не удалось отправить отзыв', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+
 async function loadTasks() {
+  loadReviews();
   try {
     const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
     tasks = snapshot.docs.map(doc => {
@@ -1630,6 +1774,16 @@ function taskCardHtml(task) {
       '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')" title="Написать">💬</button>';
   }
 
+  // Кнопка «Оставить отзыв»: только по закрытому заданию и только его участникам
+  if (isClosed && currentUser) {
+    const iAmAuthor = task.authorId === currentUser.uid;
+    const iAmExecutor = task.acceptedExecutorId === currentUser.uid;
+    const alreadyReviewed = reviews.some(r => r.taskId === task.id && r.fromUid === currentUser.uid);
+    if ((iAmAuthor || iAmExecutor) && !alreadyReviewed) {
+      buttons += '<button class="btn-chat" onclick="openReviewModal(\'' + escapeJs(task.id) + '\')" title="Оставить отзыв">⭐</button>';
+    }
+  }
+
   buttons += '<button class="btn-chat" onclick="shareTask(\'' + escapeJs(task.id) + '\')" title="Поделиться">📤</button>';
 
   return '<div class="task-card ' + cardClass + '" id="task-' + escapeJs(task.id) + '">' +
@@ -1642,7 +1796,7 @@ function taskCardHtml(task) {
     '<div class="task-desc">' + escapeHtml(task.description || '') + '</div>' +
     '<div class="task-meta">' +
       '<span>👤 ' + escapeHtml(task.author) + '</span>' +
-      '<span>⭐ ' + escapeHtml(task.rating) + '</span>' +
+      ratingHtml(task.authorId) +
       '<span>⏱ ' + escapeHtml(task.deadline) + '</span>' +
     '</div>' +
     '<div class="task-actions">' + buttons + '</div>' +
@@ -1796,6 +1950,7 @@ function openResponsesModal(taskId) {
         '<div style="flex:1; min-width:0;">' +
           '<div style="font-weight:700; word-break:break-word;">' + escapeHtml(r.executor) + '</div>' +
           '<div style="font-size:12px; color: var(--text2); margin-top:2px;">' +
+            ratingHtml(r.executorId) + ' · ' +
             (r.status === 'accepted' ? '✅ Принят' : r.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает') +
           '</div>' +
         '</div>' +
