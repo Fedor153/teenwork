@@ -741,11 +741,8 @@ function reportError(context, error) {
     }
   } catch (_) {}
 
-  if (typeof showToast === 'function') {
-    try {
-      showToast(context + ': ' + msg.slice(0, 120), 'error');
-    } catch (_) {}
-  }
+  // Технические подробности пользователю не показываем: понятные сообщения
+  // показывают сами места вызова через showToast()
 }
 
 window.addEventListener('error', function (event) {
@@ -816,12 +813,15 @@ const BAD_WORDS = [
   'убей','убью','убейте','убить','зарежу','застрел','взорву',
   'нарко','наркот','героин','кокаин','мефедрон','спайс',
   'марихуан','гашиш','анаша','амфетамин','метамфетамин','экстази','мдма','лсд',
-  'оружие','пистолет','автомат','патрон','гранат','взрывчатк','тротил',
+  'оружие','пистолет','патрон','гранат','взрывчатк','тротил',
   'теракт','исламск','джихад','шахид','смертник',
   'порно','секс','секса','сексом','минет','оргазм','эротик',
   'интим','18+','xxx','хентай','голая','голый','раздева','стриптиз',
-  'педофил','лоли','школьниц','несовершеннолетн',
-  'казино','ставки','букмекер','рулетк','1xbet'
+  'педофил','лоли',
+  'казино','букмекер','рулетк','1xbet',
+  // Приставочные формы: при проверке «с начала слова» иначе не ловятся
+  'наеб','наёб','заеб','заёб','выеб','выёб','уеб','уёб','отъеб','доеб','доёб',
+  'разъеб','подъеб','поёб','проёб','недоёб','изъеб'
 ];
 
 const BAD_PHRASES = [
@@ -834,6 +834,9 @@ const BAD_PHRASES = [
   'продам аккаунт','продаю аккаунт','обнал','обналич','карта на продажу',
   'взломать','взлом','ддос','ddos','ботнет','фишинг','скупка данных'
 ];
+
+// Префиксы нормальных слов: проще, чем перечислять все формы
+const WHITELIST_PREFIXES = ['автомат','мандал','мандарин','мандат','сруб','лолит','сукачев','учеб','дебат'];
 
 const WHITELIST = new Set([
   'команда','команды','команде','команду','командой','командую',
@@ -858,7 +861,8 @@ const WHITELIST = new Set([
   'мандарин','мандарины','мандаринов','мандаринка',
   'школьник','школьника','школьники','школьников','школьнице','школьницу',
   'школьница','школьницы','школьницей',
-  'сукачев','сукачева','сукачеву','сукачевым'
+  'сукачев','сукачева','сукачеву','сукачевым',
+  'мандат','мандата','мандаты','мандатов','мандатное','мандатный'
 ]);
 
 const INTEREST_MATCHERS = {
@@ -893,7 +897,8 @@ function isWhitelisted(word) {
   if (!word) return false;
   // Приводим к тому же виду, что и слова в белом списке: нижний регистр, ё → е
   const w = normalize(word).replace(/[^a-zа-я0-9]/g, '');
-  return WHITELIST.has(w) || WHITELIST.has(word);
+  return WHITELIST.has(w) || WHITELIST.has(word) ||
+    WHITELIST_PREFIXES.some(prefix => w.startsWith(prefix));
 }
 
 function checkForbiddenContent(text) {
@@ -932,8 +937,10 @@ function censorText(text) {
     // работал бы как квантификатор, маскируя обычные числа вроде 188.
     const badEsc = String(bad).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(
-      // В классах символов обязательно ё/Ё: без них «сукачёв» режется на «сукач» + «ёв»
-      `(^|[^a-zA-Zа-яА-ЯёЁ0-9])([a-zA-Zа-яА-ЯёЁ0-9]*${badEsc}[a-zA-Zа-яА-ЯёЁ0-9]*)(?=$|[^a-zA-Zа-яА-ЯёЁ0-9])`,
+      // Проверяем слово С НАЧАЛА: иначе «ставки» внутри «доставки», «еба» внутри
+      // «хлеба», «манда» внутри «мандат» калечат обычный текст.
+      // В классах символов обязательно ё/Ё, иначе слово режется по букве ё.
+      `(^|[^a-zA-Zа-яА-ЯёЁ0-9])(${badEsc}[a-zA-Zа-яА-ЯёЁ0-9]*)(?=$|[^a-zA-Zа-яА-ЯёЁ0-9])`,
       'gi'
     );
     result = result.replace(regex, (m, p1, token) => {
@@ -956,9 +963,9 @@ function containsBadWords(text) {
       const badNorm = normalize(bad).replace(/[^a-zа-я0-9]/g, '');
       if (!badNorm) continue;
       if (w === badNorm) return true;
-      // Ищем «плохое» внутри слова только для корней от 5 букв: иначе
-      // страдают «Сукачёв» (сука), «сруб» (сру) и подобные нормальные слова
-      if (badNorm.length >= 5 && w.length >= badNorm.length && w.includes(badNorm)) return true;
+      // Слово начинается с «плохого» корня: «наебать», «заебал» и т.п.
+      // Внутри слова не ищем — иначе страдают «Сукачёв», «сруб», «доставки»
+      if (badNorm.length >= 4 && w.startsWith(badNorm)) return true;
     }
   }
 
@@ -1057,6 +1064,8 @@ const allCategories = [
 
 let isLogin = true;
 let authLoading = false;
+// Пока идёт регистрация, обработчик входа не должен вмешиваться
+let registering = false;
 
 function toggleAuth() {
   isLogin = !isLogin;
@@ -1131,6 +1140,7 @@ async function handleAuth() {
   }
 
   authLoading = true;
+  if (!isLogin) registering = true;
   document.getElementById('authBtn').disabled = true;
   document.getElementById('authBtn').textContent = '⏳ Загрузка...';
 
@@ -1174,12 +1184,16 @@ async function handleAuth() {
     else if (err.code === 'auth/email-already-in-use') msg = 'Эта почта уже используется';
     else if (err.code === 'auth/weak-password') msg = 'Слабый пароль (минимум 6 символов)';
     else if (err.code === 'auth/invalid-email') msg = 'Неверный формат почты';
-    else msg = err.message;
+    else if (err.code === 'auth/network-request-failed') msg = 'Нет связи с сервером. Проверь интернет';
+    else if (err.code === 'auth/too-many-requests') msg = 'Слишком много попыток. Попробуй позже';
+    else if (err.code === 'auth/user-disabled') msg = 'Этот аккаунт заблокирован';
+    else msg = 'Не удалось войти. Попробуй ещё раз';
     errorEl.textContent = msg;
     errorEl.classList.add('show');
     reportError('Авторизация', err);
   } finally {
     authLoading = false;
+    registering = false;
     const btn = document.getElementById('authBtn');
     btn.disabled = false;
     btn.textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
@@ -1216,6 +1230,8 @@ async function resetPassword() {
     else if (err.code === 'auth/invalid-email') msg = 'Неверный формат email';
     else if (err.code === 'auth/too-many-requests') msg = 'Слишком много попыток. Попробуй позже';
     else if (err.code === 'auth/unauthorized-domain') msg = 'Домен сайта не разрешён в Firebase. Добавь его в Authorized domains.';
+    else if (err.code === 'auth/network-request-failed') msg = 'Нет связи с сервером. Проверь интернет';
+    else if (err.code === 'auth/too-many-requests') msg = 'Слишком много попыток. Попробуй позже';
     errorEl.textContent = msg;
     errorEl.classList.add('show');
     reportError('Восстановление пароля', err);
@@ -1230,6 +1246,9 @@ function logout() {
   document.getElementById('chatModal').classList.remove('show');
   document.getElementById('chatMessages').innerHTML = '';
   currentChatId = null;
+  reviews = [];
+  userRatings = Object.create(null);
+  filterCategories = [];
   document.getElementById('authContainer').classList.add('active');
   document.getElementById('appContainer').classList.remove('active');
   document.getElementById('termsContainer').classList.remove('active');
@@ -1307,6 +1326,7 @@ function renderProfileHeader() {
 }
 
 auth.onAuthStateChanged(user => {
+  if (registering) return;
   const splash = document.getElementById('splashScreen');
   const authContainer = document.getElementById('authContainer');
   const termsContainer = document.getElementById('termsContainer');
@@ -1413,6 +1433,8 @@ async function loadReviews() {
     const snap = await db.collection('reviews').get();
     reviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     rebuildUserRatings();
+    // Иначе карточки останутся с «✨ Новый», если отзывы пришли позже заданий
+    renderTasks();
   } catch (e) {
     reportError('Загрузка отзывов', e);
   }
@@ -1420,7 +1442,9 @@ async function loadReviews() {
 
 // Средний рейтинг и число отзывов по каждому uid
 function rebuildUserRatings() {
-  const map = {};
+  // Object.create(null): ключи приходят из данных, и «__proto__» не должен
+  // попадать в прототип объекта
+  const map = Object.create(null);
   reviews.forEach(r => {
     if (!r || !r.toUid) return;
     const item = map[r.toUid] || (map[r.toUid] = { sum: 0, count: 0 });
@@ -1489,7 +1513,12 @@ async function submitReview() {
   const toUid = iAmAuthor ? task.acceptedExecutorId : task.authorId;
   if (!toUid || toUid === currentUser.uid) return;
 
-  const text = document.getElementById('reviewText').value.trim().slice(0, 300);
+  const rawReviewText = document.getElementById('reviewText').value.trim();
+  if (checkForbiddenContent(rawReviewText)) {
+    showToast('Текст отзыва отклонён: запрещённый контент', 'error');
+    return;
+  }
+  const text = censorText(rawReviewText).slice(0, 300);
   const toName = iAmAuthor
     ? (((task.responses || []).find(r => r.executorId === toUid) || {}).executor || 'Исполнитель')
     : (task.author || 'Заказчик');
@@ -1564,6 +1593,17 @@ async function loadTasks() {
     reportError('Загрузка заданий', error);
     tasks = [];
     renderTasks();
+    // Показываем ошибку, а не «Пока пусто»: иначе кажется, что заданий нет
+    showToast('Не удалось загрузить задания', 'error');
+    const container = document.getElementById('tasksContainer');
+    if (container) {
+      container.innerHTML = '<div class="empty-state">' +
+        '<div class="emoji">📡</div>' +
+        '<div class="title">Не удалось загрузить задания</div>' +
+        '<div class="desc">Проверь интернет и попробуй ещё раз</div>' +
+        '<button class="btn-apply" style="margin:16px auto 0; max-width:220px;" onclick="loadTasks()">Повторить</button>' +
+      '</div>';
+    }
   }
 }
 
@@ -1724,8 +1764,17 @@ function openSharedTask() {
   if (sharedTaskShown) return;
   const id = new URLSearchParams(location.search).get('task');
   if (!id) return;
-  const el = document.getElementById('task-' + id);
-  if (!el) return;
+  // Карточка есть и в ленте, и в «Моих заданиях» — id был бы дублем,
+  // поэтому ищем по data-атрибуту
+  let el = null;
+  document.querySelectorAll('[data-task-id]').forEach(c => {
+    if (!el && c.getAttribute('data-task-id') === id) el = c;
+  });
+  if (!el) {
+    sharedTaskShown = true;
+    showToast('Задание закрыто или недоступно', 'warning');
+    return;
+  }
   sharedTaskShown = true;
   try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   el.classList.add('flash');
@@ -1785,12 +1834,14 @@ function taskCardHtml(task) {
     const targetResp = (task.responses || []).find(r => r.status === 'accepted') || (task.responses || [])[0];
     buttons = '<button class="btn-apply" disabled>📌 Моё задание</button>' +
       (hasResponses ? '<button class="btn-chat" onclick="openResponsesModal(\'' + escapeJs(task.id) + '\')" title="Отклики">📋 ' + (task.responses || []).length + '</button>' : '') +
-      (targetResp ? '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(targetResp.executorId) + '\',\'' + escapeJs(targetResp.executor) + '\')" title="Чат с исполнителем">💬</button>' : '') +
+      (targetResp ? '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(targetResp.executorId) + '\',\'' + escapeJs(targetResp.executor) + '\',\'' + escapeJs(task.id) + '\')" title="Чат с исполнителем">💬</button>' : '') +
       '<button class="btn-delete" onclick="openDeleteModal(\'' + escapeJs(task.id) + '\')" title="Удалить">🗑</button>';
   } else {
     buttons = '<button class="btn-apply ' + (myResponse ? 'success' : '') + '" ' + (myResponse || isClosed ? 'disabled' : '') + ' onclick="applyForTask(\'' + escapeJs(task.id) + '\', this)">' +
       (myResponse ? '✓ Отклик отправлен' : isClosed ? '✅ Задание выполнено' : '🚀 Откликнуться') + '</button>' +
-      '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')" title="Написать">💬</button>';
+      // Чат с автором доступен только после отклика: правила разрешают чат
+      // лишь между автором задания и тем, кто на него откликнулся
+      (myResponse ? '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\',\'' + escapeJs(task.id) + '\')" title="Написать">💬</button>' : '');
   }
 
   // Кнопка «Оставить отзыв»: только по закрытому заданию и только его участникам
@@ -1805,7 +1856,7 @@ function taskCardHtml(task) {
 
   buttons += '<button class="btn-chat" onclick="shareTask(\'' + escapeJs(task.id) + '\')" title="Поделиться">📤</button>';
 
-  return '<div class="task-card ' + cardClass + '" id="task-' + escapeJs(task.id) + '">' +
+  return '<div class="task-card ' + cardClass + '" data-task-id="' + escapeHtml(task.id) + '">' +
     newBadge +
     '<div class="task-categories">' + (task.categories || []).map(c => '<span class="task-category ' + getCategoryClass(c) + '">' + escapeHtml(c) + '</span>').join('') + '</div>' +
     '<div class="task-title-row">' +
@@ -1973,7 +2024,7 @@ function openResponsesModal(taskId) {
             (r.status === 'accepted' ? '✅ Принят' : r.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает') +
           '</div>' +
         '</div>' +
-        '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(r.executorId) + '\',\'' + escapeJs(r.executor) + '\')" title="Написать">💬</button>' +
+        '<button class="btn-chat" onclick="openChatWith(\'' + escapeJs(r.executorId) + '\',\'' + escapeJs(r.executor) + '\',\'' + escapeJs(task.id) + '\')" title="Написать">💬</button>' +
         (r.status === 'pending' && task.status !== 'closed' ?
           '<button class="btn-chat" style="color: var(--green); background: #D1FAE5;" onclick="setResponseStatus(\'' + escapeJs(task.id) + '\',\'' + escapeJs(r.executorId) + '\',\'accepted\')" title="Принять">✓</button>' +
           '<button class="btn-chat" style="color: var(--red); background: #FEE2E2;" onclick="setResponseStatus(\'' + escapeJs(task.id) + '\',\'' + escapeJs(r.executorId) + '\',\'rejected\')" title="Отклонить">✕</button>'
@@ -1988,7 +2039,7 @@ function closeResponsesModal() {
   document.getElementById('responsesModal').classList.remove('show');
 }
 
-async function ensureChatExists(otherUid, otherName) {
+async function ensureChatExists(otherUid, otherName, taskId) {
   if (!currentUser) return;
   if (!otherUid || otherUid === 'unknown') return;
   if (otherUid === currentUser.uid) return;
@@ -2006,7 +2057,8 @@ async function ensureChatExists(otherUid, otherName) {
       },
       lastMessage: 'Нет сообщений',
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      taskId: taskId || ''
     });
     userStats.chatsOpened++;
     updateProfileStats();
@@ -2059,7 +2111,7 @@ async function setResponseStatus(taskId, executorId, status) {
 
     if (status === 'accepted') {
       try {
-        await ensureChatExists(executorId, executorName);
+        await ensureChatExists(executorId, executorName, taskId);
       } catch (e) {
         reportError('Создание чата после принятия', e);
       }
@@ -2094,6 +2146,7 @@ function startChatsListener() {
       updateProfileStats();
     }, err => {
       reportError('Слушатель чатов', err);
+      showToast('Не удалось загрузить чаты', 'error');
     });
 }
 
@@ -2123,6 +2176,10 @@ function chatLastMs(chat) {
 function isChatUnread(chat) {
   const last = chatLastMs(chat);
   if (!last) return false;
+  // Только что созданный чат без сообщений непрочитанным не считаем
+  if (!chat.lastMessage || chat.lastMessage === 'Нет сообщений') return false;
+  // Последним писали мы сами — значит непрочитанного нет (важно для других устройств)
+  if (chat.lastSenderId && currentUser && chat.lastSenderId === currentUser.uid) return false;
   return last > (getReadMarks()[chat.id] || 0);
 }
 
@@ -2148,6 +2205,14 @@ function updateChatBadge() {
   badge.style.display = n > 0 ? 'flex' : 'none';
 }
 
+// Имя собеседника приходит из данных чата: не даём выдать себя за поддержку
+function safeDisplayName(name, uid) {
+  const n = String(name || '').trim().slice(0, 60);
+  if (!n) return 'Пользователь';
+  if (uid !== SUPPORT_UID && /teenwork|support|поддержк/i.test(n)) return 'Пользователь';
+  return n;
+}
+
 function renderChats() {
   const container = document.getElementById('chatsContainer');
   if (!container) return;
@@ -2167,7 +2232,7 @@ function renderChats() {
   }
   container.innerHTML = chats.map(chat => {
     const otherId = (chat.participants || []).find(id => id !== currentUser.uid);
-    const otherName = (chat.participantNames && chat.participantNames[otherId]) || 'Пользователь';
+    const otherName = safeDisplayName(chat.participantNames && chat.participantNames[otherId], otherId);
     const isSupport = otherId === SUPPORT_UID;
     const lastText = chat.lastMessage || 'Нет сообщений';
     const time = chat.lastUpdated && chat.lastUpdated.toDate ? formatTime(chat.lastUpdated.toDate()) : '';
@@ -2189,7 +2254,7 @@ function buildChatId(uidA, uidB) {
   return [uidA, uidB].sort().join('__');
 }
 
-async function openChatWith(otherUid, otherName) {
+async function openChatWith(otherUid, otherName, taskId) {
   if (!currentUser) { showToast('Войди, чтобы писать', 'warning'); return; }
   if (!otherUid || otherUid === 'unknown') {
     showToast('Не удалось открыть чат', 'error');
@@ -2212,28 +2277,51 @@ async function openChatWith(otherUid, otherName) {
         },
         lastMessage: 'Нет сообщений',
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        taskId: taskId || ''
       });
 
       userStats.chatsOpened++;
       updateProfileStats();
-    } else {
-      const data = snap.data() || {};
-      const names = data.participantNames || {};
-      const patch = {};
-      if (!names[currentUser.uid]) patch['participantNames.' + currentUser.uid] = userName;
-      if (!names[otherUid]) patch['participantNames.' + otherUid] = otherName;
-      if (!data.lastMessage) patch['lastMessage'] = 'Нет сообщений';
-      if (Object.keys(patch).length) {
-        try { await chatRef.update(patch); } catch (_) {}
-      }
     }
+    // Имена участников задаются при создании чата и не меняются: правила
+    // не разрешают правку participantNames (защита от переименования собеседника)
 
     openChatById(chatId);
   } catch (e) {
     reportError('Открытие чата', e);
     showToast('Ошибка открытия чата', 'error');
   }
+}
+
+// В чате поддержки поля ввода быть не должно: писать некому.
+// Показываем кнопку с переходом в Telegram.
+const SUPPORT_TELEGRAM_URL = 'https://t.me/Teen_Work';
+
+function setSupportMode(on) {
+  const row = document.querySelector('.chat-input-row');
+  if (!row) return;
+  row.style.display = on ? 'none' : 'flex';
+  const existing = document.getElementById('supportTelegramBtn');
+  if (on && !existing) {
+    const box = document.createElement('div');
+    box.id = 'supportTelegramBtn';
+    box.style.cssText = 'padding:12px; text-align:center; background:#fff; border-top:1px solid var(--divider);';
+    box.innerHTML = '<a href="' + SUPPORT_TELEGRAM_URL + '" target="_blank" rel="noopener" style="display:inline-block; padding:12px 18px; background:var(--grad-main); color:#fff; border-radius:12px; font-weight:700; text-decoration:none;">💬 Написать в Telegram @Teen_Work</a>';
+    row.parentNode.insertBefore(box, row);
+  } else if (!on && existing) {
+    existing.remove();
+  }
+}
+
+function askConfirm(message) {
+  return new Promise(resolve => {
+    const tg = tgApp();
+    if (tg && typeof tg.showConfirm === 'function') {
+      try { tg.showConfirm(message, ok => resolve(!!ok)); return; } catch (e) {}
+    }
+    resolve(window.confirm(message));
+  });
 }
 
 function openSupportChat() {
@@ -2262,7 +2350,7 @@ function openChatById(chatId) {
     // от имени другого пользователя правила Firestore не разрешают.
     const isSupportChat = (chatDocData.participants || []).indexOf(SUPPORT_UID) !== -1;
     const supportHint = isSupportChat
-      ? '<div class="chat-msg other" style="opacity:.9;">Привет! 👋 Это TeenWork Support. Опиши свою проблему, и мы поможем в течение дня. Не передавай пароль или личные данные.</div>'
+      ? '<div class="chat-msg other" style="opacity:.9;">Привет! 👋 Это чат поддержки TeenWork. Он работает в тестовом режиме — если нужен быстрый ответ, напиши нам в Telegram: @Teen_Work. Не передавай пароль или личные данные.</div>'
       : '';
 
     if (!messagesList.length) {
@@ -2286,8 +2374,9 @@ function openChatById(chatId) {
     // Пока чат открыт — считаем его прочитанным (это же гасит счётчик)
     markChatRead(chatId, chatDocData);
     const otherId = (chatDocData.participants || []).find(id => id !== currentUser.uid);
-    const otherName = (chatDocData.participantNames && chatDocData.participantNames[otherId]) || 'Пользователь';
+    const otherName = safeDisplayName(chatDocData.participantNames && chatDocData.participantNames[otherId], otherId);
     document.getElementById('chatTitle').textContent = otherName;
+    setSupportMode(otherId === SUPPORT_UID);
     renderMessages();
   }, err => {
     // Без этого в окне чата навсегда осталось бы «Загрузка…»
@@ -2317,6 +2406,7 @@ function openChatById(chatId) {
 }
 
 function closeChatModal() {
+  setSupportMode(false);
   document.getElementById('chatModal').classList.remove('show');
   if (currentChatUnsub) { currentChatUnsub(); currentChatUnsub = null; }
   currentChatId = null;
@@ -2349,7 +2439,8 @@ async function sendChatMessage() {
     await chatRef.collection('messages').add(msg);
     await chatRef.update({
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-      lastMessage: text.slice(0, 120)
+      lastMessage: text.slice(0, 120),
+      lastSenderId: currentUser.uid
     });
 
     userStats.chatsOpened = Math.max(userStats.chatsOpened, 1);
@@ -2370,7 +2461,7 @@ async function sendChatMessage() {
 async function deleteChatMessage(msgId) {
   if (!currentChatId || !currentUser) return;
 
-  const confirmed = confirm('Удалить это сообщение?');
+  const confirmed = await askConfirm('Удалить это сообщение?');
   if (!confirmed) return;
 
   try {
@@ -2440,7 +2531,10 @@ function renderMyResponses() {
         '<span>' + (response.status === 'accepted' ? '✅ Принят' : response.status === 'rejected' ? '❌ Отклонён' : '⏳ Ожидает') + '</span>' +
       '</div>' +
       '<div class="task-actions">' +
-        '<button class="btn-apply" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\')">💬 Написать автору</button>' +
+        '<button class="btn-apply" onclick="openChatWith(\'' + escapeJs(task.authorId) + '\',\'' + escapeJs(task.author) + '\',\'' + escapeJs(task.id) + '\')">💬 Написать автору</button>' +
+        (isClosed && response.status === 'accepted' &&
+         !reviews.some(r => r.taskId === task.id && r.fromUid === (currentUser && currentUser.uid))
+          ? '<button class="btn-chat" onclick="openReviewModal(\'' + escapeJs(task.id) + '\')" title="Оставить отзыв">⭐</button>' : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -2495,14 +2589,16 @@ function renderCategoryChips(containerId, preselected) {
   }).join('');
 }
 function toggleCategory(el) {
-  // В правилах Firestore на задание разрешено максимум 5 категорий,
-  // поэтому ограничиваем выбор сразу в интерфейсе.
   const container = el.parentElement;
   const alreadySelected = el.classList.contains('selected');
-  const selectedCount = container.querySelectorAll('.selected').length;
-  if (!alreadySelected && selectedCount >= 5) {
-    showToast('Можно выбрать не больше 5 категорий', 'warning');
-    return;
+  // Лимит 5 категорий — только для создания задания (так требует правило Firestore).
+  // В фильтре можно отмечать сколько угодно.
+  if (container.id === 'modalCategories') {
+    const selectedCount = container.querySelectorAll('.selected').length;
+    if (!alreadySelected && selectedCount >= 5) {
+      showToast('Можно выбрать не больше 5 категорий', 'warning');
+      return;
+    }
   }
   haptic('select');
   el.classList.toggle('selected');
@@ -2582,6 +2678,11 @@ async function addTask() {
   }
   const wasRounded = isFinite(rawPriceNum) && Math.abs(rawPriceNum - price) > 0;
 
+  if (checkForbiddenContent(deadline)) {
+    showToast('Срок выполнения отклонён: запрещённый контент', 'error');
+    release();
+    return;
+  }
   if (!categories.length) { showToast('Выбери категорию', 'warning'); release(); return; }
 
   if (checkForbiddenContent(rawTitle)) {
@@ -2607,7 +2708,6 @@ async function addTask() {
     deadline: deadline,
     author: userName || 'Пользователь',
     authorId: currentUser ? currentUser.uid : 'unknown',
-    rating: 5,
     responses: [],
     responderIds: [],
     status: 'open',
@@ -2625,7 +2725,6 @@ async function addTask() {
       deadline: newTask.deadline,
       author: newTask.author,
       authorId: newTask.authorId,
-      rating: newTask.rating,
       responses: [],
       responderIds: [],
       status: 'open',
